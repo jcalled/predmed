@@ -1,0 +1,100 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg:      #0A1628;
+  --surface: #0F1E35;
+  --surface2:#152238;
+  --border:  rgba(255,255,255,0.08);
+  --accent:  #00C2FF;
+  --accent2: #00FF9D;
+  --red:     #FF4444;
+  --yellow:  #FFD700;
+  --text:    #E8EEF7;
+  --text2:   #7A9CC4;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* Scrollbar customizada */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: rgba(0,194,255,0.2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,194,255,0.4); }
+
+/* Animações */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.animate-fadein { animation: fadeIn 0.35s ease; }
+.animate-slideup { animation: slideUp 0.3s ease; }
+
+/* Card base */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+}
+
+/* KPI card */
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  transition: border-color 0.2s;
+}
+.kpi-card:hover { border-color: rgba(0,194,255,0.25); }
+
+/* Badge status */
+.badge { display: inline-flex; align-items: center; gap: 4px; border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 600; }
+.badge-red    { background: rgba(255,68,68,0.12);  color: var(--red);    border: 1px solid rgba(255,68,68,0.25); }
+.badge-green  { background: rgba(0,255,157,0.1);   color: var(--accent2);border: 1px solid rgba(0,255,157,0.25); }
+.badge-blue   { background: rgba(0,194,255,0.1);   color: var(--accent); border: 1px solid rgba(0,194,255,0.25); }
+.badge-yellow { background: rgba(255,215,0,0.1);   color: var(--yellow); border: 1px solid rgba(255,215,0,0.25); }
+.badge-gray   { background: rgba(122,156,196,0.1); color: var(--text2);  border: 1px solid rgba(122,156,196,0.2); }
+
+/* Pressure bar */
+.pressure-bar-bg { height: 4px; background: var(--border); border-radius: 2px; margin-top: 8px; }
+.pressure-bar    { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+
+/* Button */
+.btn-primary { background: rgba(0,194,255,0.1); border: 1px solid rgba(0,194,255,0.3); color: var(--accent); border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+.btn-primary:hover { background: rgba(0,194,255,0.2); }
+.btn-green { background: rgba(0,255,157,0.1); border: 1px solid rgba(0,255,157,0.3); color: var(--accent2); border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn-green:hover { background: rgba(0,255,157,0.2); }
+.btn-red { background: rgba(255,68,68,0.08); border: 1px solid rgba(255,68,68,0.25); color: var(--red); border-radius: 8px; padding: 8px 18px; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+.btn-red:hover { background: rgba(255,68,68,0.15); }
+
+/* Input */
+.input-dark { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 10px 14px; font-size: 14px; width: 100%; transition: border-color 0.2s; outline: none; }
+.input-dark:focus { border-color: rgba(0,194,255,0.4); }
+
+/* Table */
+.table-predmed { width: 100%; border-collapse: collapse; font-size: 13px; }
+.table-predmed th { text-align: left; padding: 10px 12px; font-size: 11px; color: var(--text2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); }
+.table-predmed td { padding: 11px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
+.table-predmed tr:hover td { background: rgba(0,194,255,0.03); }
+
+/* Redis card (redistribuição) */
+.redis-row { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+.redis-from, .redis-to { flex: 1; }
+.redis-hospital { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.redis-info { font-size: 11px; color: var(--text2); }
+.redis-arrow { display: flex; flex-direction: column; align-items: center; gap: 2px; flex-shrink: 0; min-width: 100px; text-align: center; }
+.redis-arrow-icon { font-size: 20px; color: var(--accent2); }
+.redis-qty { font-size: 12px; font-weight: 700; color: var(--accent2); font-family: 'DM Mono', monospace; }
+
+/* Toggle */
+.toggle { width: 44px; height: 24px; background: var(--border); border-radius: 12px; position: relative; cursor: pointer; transition: background 0.2s; flex-shrink: 0; border: none; }
+.toggle.on { background: rgba(0,194,255,0.3); }
+.toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; background: var(--text2); border-radius: 50%; transition: all 0.2s; }
+.toggle.on::after { left: 23px; background: var(--accent); }
