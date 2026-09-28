@@ -54,7 +54,6 @@ Atenção: permanência NÃO é tempo de espera na fila. A fila importada não t
 data de entrada confiável, então a espera ainda não é calculada.
 */
 import { useEffect, useState } from "react";
-import { useAuth } from '@/lib/auth'
 import { analyticsApi } from '@/lib/api'
 
 // ── Tipos ────────────────────────────────────────────────────────
@@ -115,22 +114,13 @@ interface PressaoHistoricaItem {
   desvio_media_pct: number;
 }
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
 // ── Helpers ──────────────────────────────────────────────────────
 const fmt = (n: number) => new Intl.NumberFormat("pt-BR").format(n);
 const fmtR = (n: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
 
-function fetchAuth(token: string, path: string) {
-  return fetch(`${API}${path}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  }).then((r) => r.json());
-}
-
 // ── Componente principal ─────────────────────────────────────────
 export default function AnalyticsPage() {
-  const { token } = useAuth();
   const [resumo, setResumo] = useState<ResumoAnalytics | null>(null);
   const [sazonalidade, setSazonalidade] = useState<SazonalidadeData | null>(null);
   const [mortalidade, setMortalidade] = useState<MortalidadeItem[]>([]);

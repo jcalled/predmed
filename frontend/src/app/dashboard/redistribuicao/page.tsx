@@ -109,6 +109,7 @@ interface Hospital {
   pressao: number
   pressao_status: string
   confianca?: number // Confiança da classificação CIR
+  dias_para_multa?: number // não enviado pelo backend atual (economia de multas fica 0)
 }
 
 interface Sugestao {
@@ -221,7 +222,7 @@ export default function RedistribuicaoPage() {
   const macros = data?.macros || {}
 
   // Lista única de hospitais de origem
-  const hospitaisOrigem = [...new Set(sugestoes.map(s => s.origem.hospital_nome))].sort()
+  const hospitaisOrigem = Array.from(new Set(sugestoes.map(s => s.origem.hospital_nome))).sort()
 
   // Aplica filtros
   const sugestoesFiltradas = sugestoes
@@ -771,7 +772,7 @@ export default function RedistribuicaoPage() {
                             className="btn-red text-xs px-3 py-1.5"
                             onClick={(e) => {
                               e.stopPropagation()
-                              setRecusadas(p => new Set([...p, rowId]))
+                              setRecusadas(p => new Set(Array.from(p).concat(rowId)))
                             }}
                           >
                             ✕ Recusar
