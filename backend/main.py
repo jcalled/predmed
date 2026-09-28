@@ -12,6 +12,7 @@ from datetime import datetime, date
 import random
 import shutil
 import os
+import tempfile
 
 from services.previsoes_ml import limpar_cache, get_previsoes_todas_especialidades_prophet
 
@@ -38,7 +39,7 @@ from services.ia_engine import (
     get_redistribuicao_sugestoes, get_vagas_status_tenant,
     pressao_status
 )
-from services.data_import import import_integrasus, import_datasus
+from services.data_import import import_integrasus, import_datasus, ImportacaoInvalida
 
 from services.previsoes import (
     get_previsoes, get_previsoes_todas_especialidades,
@@ -424,17 +425,33 @@ def update_vaga(
 
 
 # ─── IMPORTAÇÃO DE DADOS ──────────────────────────────────
+def _importar_upload(file: UploadFile, importador, db: Session) -> int:
+    """
+    Grava o upload num arquivo temporário com nome gerado (não usa file.filename),
+    chama o importador (transacional) e apaga o temporário.
+    Arquivo inválido → 400 e a base anterior é preservada.
+    """
+    fd, path = tempfile.mkstemp(prefix="predmed-upload-", suffix=".csv")
+    try:
+        with os.fdopen(fd, "wb") as f:
+            shutil.copyfileobj(file.file, f)
+        return importador(path, db)
+    except ImportacaoInvalida as e:
+        raise HTTPException(400, f"Importação rejeitada: {e}. Dados anteriores preservados.")
+    finally:
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+
+
 @app.post("/admin/import/integrasus")
 def upload_integrasus(
     file: UploadFile = File(...),
     user: Usuario = Depends(require_sesa),
     db: Session = Depends(get_db)
 ):
-    path = f"/tmp/{file.filename}"
-    with open(path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-    count = import_integrasus(path, db)
-
+    count = _importar_upload(file, import_integrasus, db)
 
     # Após salvar os dados, limpa cache e retreina em background
     limpar_cache()
@@ -454,10 +471,7 @@ def upload_datasus(
     user: Usuario = Depends(require_sesa),
     db: Session = Depends(get_db)
 ):
-    path = f"/tmp/{file.filename}"
-    with open(path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-    count = import_datasus(path, db)
+    count = _importar_upload(file, import_datasus, db)
     return {"ok": True, "hospitais_importados": count}
 
 
