@@ -32,3 +32,33 @@ def db():
         yield sessao
     finally:
         sessao.close()
+
+
+SENHA_TESTE = "senha-sintetica-de-teste"
+
+
+@pytest.fixture()
+def client(db):
+    """TestClient sem disparar o evento de startup (que rodaria o seed)."""
+    from fastapi.testclient import TestClient
+    import main
+    return TestClient(main.app)
+
+
+def criar_usuario(db, email, role, tenant_kwargs):
+    from database import Tenant, Usuario
+    from auth import hash_password
+    t = Tenant(**tenant_kwargs)
+    db.add(t)
+    db.flush()
+    u = Usuario(nome=email.split("@")[0], email=email, senha_hash=hash_password(SENHA_TESTE),
+                role=role, tenant_id=t.id)
+    db.add(u)
+    db.commit()
+    return u, t
+
+
+def token(client, email):
+    r = client.post("/auth/login", json={"email": email, "password": SENHA_TESTE})
+    assert r.status_code == 200, r.text
+    return {"Authorization": f"Bearer {r.json()['access_token']}"}

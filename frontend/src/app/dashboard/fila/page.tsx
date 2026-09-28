@@ -44,7 +44,7 @@ export default function FilaPage() {
     <div className="animate-fadein">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Fila Cirúrgica</h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--text2)' }}>Dados em tempo real — IntegraSUS SESA/CE</p>
+        <p className="text-sm mt-1" style={{ color: 'var(--text2)' }}>Última importação — IntegraSUS SESA/CE</p>
       </div>
 
       {/* KPIs */}

@@ -14,16 +14,16 @@ export default function PrevisoesMLPage() {
   const [especialidade, setEspecialidade] = useState<string>('')
   const [horizonte, setHorizonte] = useState<number>(6)
 
-  // Busca dados do Prophet
+  // Previsão Holt-Winters (série histórica simulada — não validada)
   const { data, isLoading } = useSWR(
     ['previsoes-ml', especialidade, horizonte],
-    () => previsoesMlApi.prophet(especialidade || undefined, horizonte)
+    () => previsoesMlApi.previsao(especialidade || undefined, horizonte)
   )
 
   // Busca resumo de todas especialidades
   const { data: resumo } = useSWR(
     'previsoes-ml-todas',
-    () => previsoesMlApi.prophetTodas()
+    () => previsoesMlApi.todas()
   )
 
   // Lista de especialidades para o select
@@ -32,9 +32,10 @@ export default function PrevisoesMLPage() {
   return (
     <div className="animate-fadein">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-text1">Previsões ML - Prophet</h1>
+        <h1 className="text-2xl font-bold text-text1">Previsões ML — Holt-Winters</h1>
         <p className="text-sm mt-1" style={{ color: 'var(--text2)' }}>
-          Modelo preditivo do Facebook com MAPE {'<'} 15% - aprovado no Programa Centelha
+          Suavização exponencial com sazonalidade anual sobre série histórica <strong>simulada</strong>.
+          Previsão não validada — meta do projeto: MAPE {'<'} 15% em dados reais.
         </p>
       </div>
 
@@ -43,10 +44,10 @@ export default function PrevisoesMLPage() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <KPICard
             label="MAPE (erro)"
-            value={`${data.metricas.mape_pct}%`}
-            detail={data.metricas.mape_pct < 15 ? '✅ Meta Centelha' : '⚠️ Acima da meta'}
-            color={data.metricas.mape_pct < 15 ? 'green' : 'red'}
-            tooltip="Mean Absolute Percentage Error - quanto menor, melhor. Meta do Centelha: <15%"
+            value={data.metricas.mape_pct == null ? 'não validado' : `${data.metricas.mape_pct}%`}
+            detail="Meta do projeto: < 15%"
+            color="yellow"
+            tooltip="Erro percentual médio em dados reais ainda não medido: a série histórica usada é simulada."
           />
           <KPICard
             label="Tendência"
@@ -132,7 +133,7 @@ export default function PrevisoesMLPage() {
         </select>
 
         <span className="text-xs" style={{ color: 'var(--text2)' }}>
-          Modelo Prophet com sazonalidade anual
+          Holt-Winters com sazonalidade anual · faixa ±10% ilustrativa
         </span>
       </div>
 
@@ -155,11 +156,11 @@ export default function PrevisoesMLPage() {
             <div className="flex gap-4 mt-3 text-xs">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full" style={{ background: 'var(--accent)' }} />
-                <span style={{ color: 'var(--text2)' }}>Histórico real</span>
+                <span style={{ color: 'var(--text2)' }}>Histórico (simulado)</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full" style={{ background: 'var(--accent2)' }} />
-                <span style={{ color: 'var(--text2)' }}>Projeção Prophet</span>
+                <span style={{ color: 'var(--text2)' }}>Projeção Holt-Winters</span>
               </div>
             </div>
           </div>
@@ -180,7 +181,7 @@ export default function PrevisoesMLPage() {
                 <div>
                   <span className="font-semibold text-sm">{esp.especialidade}</span>
                   <div className="flex gap-3 mt-1 text-xs" style={{ color: 'var(--text2)' }}>
-                    <span>MAPE: {esp.mape_pct}%</span>
+                    <span>MAPE: {esp.mape_pct == null ? 'não validado' : `${esp.mape_pct}%`}</span>
                     <span>•</span>
                     <span>Fila atual: {esp.fila_atual.toLocaleString('pt-BR')}</span>
                     <span>•</span>

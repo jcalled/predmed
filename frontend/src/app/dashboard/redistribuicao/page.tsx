@@ -118,8 +118,9 @@ interface Sugestao {
   qtd_sugerida: number
   capacidade_livre: number
   reducao_espera_dias: number
-  aih_estimada: number
-  distancia_km: number
+  aih_estimada: number        // simulado: R$ 1.500 fixo por AIH
+  aih_estimada_origem?: string
+  distancia_km: number | null // ainda não calculada
   cir: string
   macro_origem?: string
   macro_destino?: string
@@ -381,20 +382,20 @@ export default function RedistribuicaoPage() {
       {mostrarMetricasAvancadas && (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
           <KPICard
-            label="Economia Potencial"
+            label="Economia Potencial (simulado)"
             value={`R$ ${(economiaTotalMultas + aihTotal / 3).toLocaleString('pt-BR')}`}
             icon="💰"
             color="blue"
-            tooltip="Soma de AIHs economizadas + multas evitadas com a redistribuição"
+            tooltip="Simulação com parâmetros fixos (R$ 1.500/AIH, R$ 500/multa); não é valor medido"
           />
 
           <KPICard
-            label="Dias de Espera Evitados"
+            label="Dias de Espera Evitados (simulado)"
             value={`${(sugestoesFiltradas.reduce((acc, s) => acc + s.reducao_espera_dias * s.qtd_sugerida, 0) / 30).toFixed(0)} meses`}
             detail={`${sugestoesFiltradas.reduce((acc, s) => acc + s.reducao_espera_dias, 0)} dias totais`}
             icon="⏱️"
             color="green"
-            tooltip="Tempo total de espera que será economizado para os pacientes"
+            tooltip="Estimativa heurística (fila ÷ produção mensal); não validada"
           />
 
           <KPICard
@@ -408,11 +409,11 @@ export default function RedistribuicaoPage() {
 
           <KPICard
             label="ROI da Redistribuição"
-            value={`${((economiaTotalMultas + aihTotal/3) / (aihTotal/10) || 0).toFixed(1)}×`}
-            detail={`R$ 1 → R$ ${((economiaTotalMultas + aihTotal/3) / (aihTotal/10) || 0).toFixed(0)} de retorno`}
+            value="não validado"
+            detail="Sem base de custos medida"
             icon="⚖️"
             color="red"
-            tooltip="Retorno sobre investimento: cada R$1 gasto gera este valor em economia"
+            tooltip="Não há dados de custo reais para calcular retorno; métrica removida até haver avaliação"
           />
         </div>
       )}
@@ -748,9 +749,9 @@ export default function RedistribuicaoPage() {
                           {s.capacidade_livre} vagas livres
                         </div>
                       </Tooltip>
-                      <Tooltip text="Valor estimado das AIHs (Autorização de Internação Hospitalar)">
+                      <Tooltip text="Simulado: R$ 1.500 fixo por AIH (não é valor pago pelo SUS)">
                         <div className="text-xs mt-1 font-mono cursor-help" style={{ color: 'var(--accent2)' }}>
-                          AIH: R$ {s.aih_estimada.toLocaleString('pt-BR')}
+                          AIH (simulado): R$ {s.aih_estimada.toLocaleString('pt-BR')}
                         </div>
                       </Tooltip>
 
@@ -789,27 +790,27 @@ export default function RedistribuicaoPage() {
                   {/* Métricas de impacto */}
                   <div className="grid grid-cols-4 gap-2 mt-3 pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
                     <div>
-                      <div className="text-[10px]" style={{ color: 'var(--text2)' }}>AIH Estimada</div>
-                      <Tooltip text="Valor que o SUS pagará pelo procedimento">
+                      <div className="text-[10px]" style={{ color: 'var(--text2)' }}>AIH (simulado)</div>
+                      <Tooltip text="Simulado: R$ 1.500 fixo por AIH (não é valor pago pelo SUS)">
                         <div className="text-xs font-mono cursor-help" style={{ color: 'var(--accent)' }}>R$ {s.aih_estimada.toLocaleString('pt-BR')}</div>
                       </Tooltip>
                     </div>
                     <div>
-                      <div className="text-[10px]" style={{ color: 'var(--text2)' }}>Multa Evitada</div>
-                      <Tooltip text="Valor que o hospital deixará de pagar em multas por atraso">
+                      <div className="text-[10px]" style={{ color: 'var(--text2)' }}>Multa Evitada (simulado)</div>
+                      <Tooltip text="Simulado: R$ 500 fixo por paciente; não há base de multas medida">
                         <div className="text-xs font-mono cursor-help" style={{ color: 'var(--accent2)' }}>R$ {(s.qtd_sugerida * 500).toLocaleString('pt-BR')}</div>
                       </Tooltip>
                     </div>
                     <div>
                       <div className="text-[10px]" style={{ color: 'var(--text2)' }}>Dias Espera</div>
-                      <Tooltip text="Redução estimada no tempo de espera">
+                      <Tooltip text="Estimativa heurística (simulado), não medida">
                         <div className="text-xs font-mono cursor-help" style={{ color: 'var(--yellow)' }}>{s.reducao_espera_dias}d</div>
                       </Tooltip>
                     </div>
                     <div>
                       <div className="text-[10px]" style={{ color: 'var(--text2)' }}>Distância</div>
-                      <Tooltip text="Distância aproximada entre os hospitais">
-                        <div className="text-xs font-mono cursor-help" style={{ color: 'var(--text2)' }}>{s.distancia_km}km</div>
+                      <Tooltip text="Distância entre os hospitais ainda não calculada">
+                        <div className="text-xs font-mono cursor-help" style={{ color: 'var(--text2)' }}>{s.distancia_km != null ? `${s.distancia_km}km` : 'n/d'}</div>
                       </Tooltip>
                     </div>
                   </div>
@@ -842,11 +843,11 @@ export default function RedistribuicaoPage() {
             />
 
             <KPICard
-              label="AIH total"
+              label="AIH total (simulado)"
               value={`R$ ${aprovadas.reduce((acc, a) => acc + a.aih_estimada, 0).toLocaleString('pt-BR')}`}
               icon="💰"
               color="blue"
-              tooltip="Valor total das AIHs geradas"
+              tooltip="Simulado: R$ 1.500 fixo por AIH"
             />
 
             <KPICard
@@ -917,8 +918,8 @@ export default function RedistribuicaoPage() {
             <div className="grid grid-cols-3 gap-3 mb-6">
               {[
                 { label: 'Pacientes', val: modalSugestao.qtd_sugerida, color: 'var(--accent2)' },
-                { label: 'AIH Estimada', val: `R$ ${modalSugestao.aih_estimada.toLocaleString('pt-BR')}`, color: 'var(--yellow)' },
-                { label: 'Multa evitada', val: `R$ ${(modalSugestao.qtd_sugerida * 500).toLocaleString('pt-BR')}`, color: 'var(--red)' },
+                { label: 'AIH (simulado)', val: `R$ ${modalSugestao.aih_estimada.toLocaleString('pt-BR')}`, color: 'var(--yellow)' },
+                { label: 'Multa evitada (simulado)', val: `R$ ${(modalSugestao.qtd_sugerida * 500).toLocaleString('pt-BR')}`, color: 'var(--red)' },
               ].map(({ label, val, color }) => (
                 <div key={label} className="p-3 rounded-lg text-center" style={{ background: 'var(--surface2)' }}>
                   <div className="text-xs mb-1" style={{ color: 'var(--text2)' }}>{label}</div>

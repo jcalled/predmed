@@ -118,9 +118,9 @@ export const zerarFilasApi = {
 }
 
 export const previsoesMlApi = {
-  // Previsão Prophet para uma especialidade
-  prophet: (especialidade?: string, horizonte: number = 6) =>
-    api.get('/previsoes/prophet', { 
+  // Previsão Holt-Winters para uma especialidade (série histórica simulada)
+  previsao: (especialidade?: string, horizonte: number = 6) =>
+    api.get('/previsoes/ml', { 
       params: { 
         ...(especialidade && { especialidade }),
         horizonte 
@@ -128,8 +128,8 @@ export const previsoesMlApi = {
     }).then(r => r.data),
   
   // Resumo de todas as especialidades
-  prophetTodas: () => 
-    api.get('/previsoes/prophet/todas').then(r => r.data),
+  todas: () =>
+    api.get('/previsoes/ml/todas').then(r => r.data),
 }
 
 

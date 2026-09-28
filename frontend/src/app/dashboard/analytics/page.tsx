@@ -48,21 +48,10 @@ Estresse do SUS
   Gestão macro
   Isso é inteligência de sistema de saúde.
 
-4) Espera real → Gargalo estrutural
+4) Permanência (SIH) → tempo médio de internação por especialidade
 
-Mostra:
-
-  Especialidades com fila crônica
-  Onde investir
-  Onde fazer eletiva
-  Onde faturar mais
-
-👉 Serve para:
-
-  Direcionar produção
-  Definir prioridade
-  Planejar expansão
-  Isso é decisão de investimento.
+Atenção: permanência NÃO é tempo de espera na fila. A fila importada não traz
+data de entrada confiável, então a espera ainda não é calculada.
 */
 import { useEffect, useState } from "react";
 import { useAuth } from '@/lib/auth'
@@ -243,7 +232,7 @@ useEffect(() => {
               {t === "sazonalidade" && "📅 Sazonalidade"}
               {t === "mortalidade" && "⚕️ Mortalidade"}
               {t === "pressao" && "📈 Pressão Histórica"}
-              {t === "espera" && "⏱ Espera Real"}
+              {t === "espera" && "⏱ Permanência (SIH)"}
             </button>
           ))}
         </div>
@@ -445,15 +434,15 @@ useEffect(() => {
           </div>
         )}
 
-        {/* Tab: Espera Real */}
+        {/* Tab: Permanência (SIH) — não é espera na fila */}
         {tab === "espera" && resumo && (
           <div className="bg-[#0d1529] border border-[#1e3a5f] rounded-xl overflow-hidden">
             <div className="px-5 py-4 border-b border-[#1e3a5f]">
               <h3 className="text-sm font-bold text-[#00d4ff] uppercase tracking-widest">
-                Tempo de Espera Real por Especialidade
+                Permanência Hospitalar Média por Especialidade
               </h3>
               <p className="text-xs text-slate-400 mt-1">
-                Calculado a partir de {fmt(resumo.base_dados.total_aih)} internações reais SIH/DATASUS
+                Calculado a partir de {fmt(resumo.base_dados.total_aih)} internações SIH/DATASUS. É tempo de internação, não tempo de espera na fila.
               </p>
             </div>
             <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-3">

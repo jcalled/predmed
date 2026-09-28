@@ -1,7 +1,11 @@
 """
-PREDMED — Serviço de Previsões ML
-Reconstrói série histórica a partir de DATASUS + fila atual
+PREDMED — Serviço de Previsões (regressão linear)
+Reconstrói uma série histórica SIMULADA a partir de DATASUS + fila atual
 e projeta 6 meses com regressão linear.
+
+Honestidade (B05): a série de fila histórica é estimada, não observada. Por isso
+nenhuma métrica aqui é "acurácia validada": mape_pct é sempre None com
+mape_status="nao_validado", e o erro de ajuste in-sample é exposto com nome próprio.
 """
 import numpy as np
 from typing import List, Dict, Optional, Tuple
@@ -25,7 +29,9 @@ SAZONALIDADE = {
     9: 1.05, 10: 1.07, 11: 0.98, 12: 0.75,
 }  # Dezembro/Janeiro reduzidos (férias hospitalares)
 
-# Tempo médio de espera estimado por especialidade (meses)
+# Tempo médio de espera por especialidade (meses) — PARÂMETRO FIXO, não medido.
+# A fonte IntegraSUS atual não traz data de entrada na fila (ver B17/B35).
+ESPERA_MEDIA_ORIGEM = "parametro_fixo_nao_validado"
 ESPERA_MEDIA_ESP = {
     "ONCOLOGIA": 6.2,
     "CARDIOVASCULAR": 8.1,
@@ -36,6 +42,13 @@ ESPERA_MEDIA_ESP = {
     "GINECOLOGIA": 3.8,
     "OFTALMOLOGIA": 3.1,
 }
+
+
+ORIGEM_SERIE = "simulado"
+AVISO_SERIE = ("Série histórica de fila SIMULADA a partir da fila atual e da capacidade DATASUS; "
+               "previsão não validada contra dados observados.")
+# Hipótese de cenário (meta do projeto, NÃO resultado): redistribuição absorve 40% do crescimento.
+META_REDUCAO_REDISTRIB = 0.40
 
 
 def _mes_str(dt: date) -> str:
@@ -223,8 +236,8 @@ def get_previsoes(
     fila_proj_6m = int(y_fila_future[-1])
     variacao_pct = round((fila_proj_6m - fila_atual_val) / max(fila_atual_val, 1) * 100, 1)
 
-    # Cenário com redistribuição (reduz 40% do crescimento)
-    fila_com_redistrib = int(fila_atual_val + (fila_proj_6m - fila_atual_val) * 0.6)
+    # Cenário SIMULADO com redistribuição: aplica a meta do projeto (40% do crescimento).
+    fila_com_redistrib = int(fila_atual_val + (fila_proj_6m - fila_atual_val) * (1 - META_REDUCAO_REDISTRIB))
     economia_pacientes = fila_proj_6m - fila_com_redistrib
 
     # ── Espera média projetada ─────────────────────────────
@@ -265,19 +278,27 @@ def get_previsoes(
         "historico": historico,
         "projecao": projecao,
         "serie_completa": historico + projecao,  # conveniente para gráfico único
+        "origem_serie": ORIGEM_SERIE,
+        "aviso": AVISO_SERIE,
         "metricas": {
-            "mape_pct": round(mape_fila, 1),
+            "mape_pct": None,
+            "mape_status": "nao_validado",
+            "erro_ajuste_in_sample_pct": round(mape_fila, 1),  # ajuste na série simulada, não é validação
+            "modelo": "Regressão linear",
             "slope_mensal_pct": round(slope_pct, 2),
             "fila_atual": fila_atual_val,
             "fila_proj_6m": fila_proj_6m,
             "variacao_pct": variacao_pct,
             "espera_media_atual_meses": round(espera_atual, 1),
+            "espera_media_origem": ESPERA_MEDIA_ORIGEM,
             "espera_projetada_meses": espera_projetada,
             "capacidade_mensal": cap_atual,
             "entradas_media_mensal": int(entradas_media),
-            # Impacto da redistribuição
+            # Impacto da redistribuição — cenário simulado com a META de 40% (não é resultado)
             "fila_com_redistrib_6m": fila_com_redistrib,
             "economia_pacientes_redistrib": economia_pacientes,
+            "cenario_redistrib_origem": "simulado",
+            "cenario_redistrib_meta_pct": int(META_REDUCAO_REDISTRIB * 100),
         },
         "alertas": alertas,
     }
@@ -319,9 +340,12 @@ def get_previsoes_todas_especialidades(db: Session) -> Dict:
             "fila_atual": fila_atual,
             "fila_proj_6m": fila_6m,
             "variacao_pct": variacao,
-            "mape_pct": round(mape, 1),
+            "mape_pct": None,
+            "mape_status": "nao_validado",
+            "erro_ajuste_in_sample_pct": round(mape, 1),
             "tendencia": "crescimento" if slope_pct > 1 else "estavel" if slope_pct > -1 else "reducao",
             "espera_meses": ESPERA_MEDIA_ESP.get(esp, 5.2),
+            "espera_origem": ESPERA_MEDIA_ORIGEM,
             "urgencia": "critica" if variacao > 15 else "alta" if variacao > 5 else "normal",
         })
 
@@ -344,12 +368,16 @@ def get_previsoes_todas_especialidades(db: Session) -> Dict:
             "fila_atual": fila_atual_t,
             "fila_proj_6m": fila_6m_t,
             "variacao_pct": round((fila_6m_t - fila_atual_t) / max(fila_atual_t, 1) * 100, 1),
-            "mape_pct": round(mape_t, 1),
+            "mape_pct": None,
+            "mape_status": "nao_validado",
+            "erro_ajuste_in_sample_pct": round(mape_t, 1),
         }
 
     return {
         "total": total_summary,
         "por_especialidade": resumos,
         "criticas": [r for r in resumos if r["urgencia"] == "critica"],
+        "origem_serie": ORIGEM_SERIE,
+        "aviso": AVISO_SERIE,
         "gerado_em": datetime.now().isoformat(),
     }

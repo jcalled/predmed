@@ -29,7 +29,7 @@ export default function RelatoriosPage() {
                 ['Judicializados', data?.kpis?.judicializados?.toLocaleString('pt-BR')],
                 ['Hospitais monitorados', data?.kpis?.hospitais_monitorados],
                 ['Sobrecarregados', data?.kpis?.hospitais_sobrecarregados],
-                ['Acurácia IA (MAPE)', `${data?.kpis?.acuracia_mape}%`],
+                ['Acurácia IA (MAPE)', data?.kpis?.acuracia_mape != null ? `${data.kpis.acuracia_mape}%` : 'não validado'],
               ].map(([label, val]) => (
                 <div key={String(label)} className="flex justify-between py-2 border-b" style={{ borderColor: 'var(--border)' }}>
                   <span style={{ color: 'var(--text2)' }}>{label}</span>

@@ -14,7 +14,7 @@ import shutil
 import os
 import tempfile
 
-from services.previsoes_ml import limpar_cache, get_previsoes_todas_especialidades_prophet
+from services.previsoes_ml import limpar_cache, get_previsoes_ml, get_previsoes_ml_todas
 
 from contextlib import asynccontextmanager
 import threading
@@ -37,16 +37,14 @@ from auth import (
 from services.ia_engine import (
     get_dashboard_kpis, get_hospitais_pressao,
     get_redistribuicao_sugestoes, get_vagas_status_tenant,
-    pressao_status
+    pressao_status, VALOR_AIH_SIMULADO
 )
 from services.data_import import import_integrasus, import_datasus, ImportacaoInvalida
 
 from services.previsoes import (
     get_previsoes, get_previsoes_todas_especialidades,
-    build_serie_historica, ESPERA_MEDIA_ESP
+    build_serie_historica, ESPERA_MEDIA_ESP, ESPERA_MEDIA_ORIGEM
 )
-
-from services.previsoes_ml import get_previsoes_prophet, get_previsoes_todas_especialidades_prophet
 
 from services.analytics_sih import (
     get_resumo_analytics, get_sazonalidade_real,
@@ -55,15 +53,9 @@ from services.analytics_sih import (
     get_validacao_mape, get_espera_media_real
 )
 
-# def _treinar_em_background(db):
-#     """Treina todos os modelos ao subir o servidor."""
-#     logger.info("🔄 Iniciando pré-treinamento dos modelos ML...")
-#     get_previsoes_todas_especialidades_prophet(db)
-#     logger.info("✅ Modelos ML prontos!")
 
 def _treinar_em_background(db):
     logger.info("🔄 Retreinando modelos ML após upload...")
-    from services.previsoes_ml import get_previsoes_prophet
     from database import SerieHistorica
 
     especialidades = db.query(SerieHistorica.especialidade).distinct().all()
@@ -77,7 +69,7 @@ def _treinar_em_background(db):
     for esp in especialidades:
         for h in horizontes:
             try:
-                get_previsoes_prophet(db, esp, horizonte=h)
+                get_previsoes_ml(db, esp, horizonte=h)
                 logger.info(f"✅ {esp} — {h} meses treinado")
             except Exception as e:
                 logger.error(f"❌ {esp} {h}m: {e}")
@@ -346,7 +338,8 @@ def aprovar_redistribuicao(
     return {
         "protocolo": protocolo,
         "status": "aprovado",
-        "aih_estimada": data.qtd_pacientes * 1500,
+        "aih_estimada": data.qtd_pacientes * VALOR_AIH_SIMULADO,
+        "aih_estimada_origem": "simulado",
         "message": f"✅ {data.qtd_pacientes} pacientes alocados para {data.hospital_destino}",
     }
 
@@ -375,7 +368,8 @@ def historico_transferencias(
                 "especialidade": t.especialidade,
                 "qtd_pacientes": t.qtd_pacientes,
                 "status": t.status,
-                "aih_estimada": t.qtd_pacientes * 1500,
+                "aih_estimada": t.qtd_pacientes * VALOR_AIH_SIMULADO,
+                "aih_estimada_origem": "simulado",
             }
             for t in rows
         ]
@@ -602,24 +596,10 @@ def recalcular_previsoes(
     return {"ok": True, "message": "Série histórica recalculada com sucesso"}
 
 
-# --- PREVISOES PROPHET (MACHINE LEARNING) ---────────────────────────────────────────
+# --- PREVISÕES ML (Holt-Winters; série histórica simulada, não validada) ---
 
-# @app.get("/previsoes/prophet")
-# def previsoes_prophet(
-#     especialidade: Optional[str] = None,
-#     horizonte: int = 6,
-#     user: Usuario = Depends(get_current_user),
-#     db: Session = Depends(get_db)
-# ):
-#     """
-#     Previsões usando Prophet (Facebook) - MAPE < 15%
-     
-#     Este é o modelo principal para o Programa Centelha.
-#     """
-#     return get_previsoes_prophet(db, especialidade, horizonte)
-
-@app.get("/previsoes/prophet")
-def previsoes_prophet(
+@app.get("/previsoes/ml")
+def previsoes_ml(
     especialidade: Optional[str] = None,
     horizonte: int = 6,
     user: Usuario = Depends(get_current_user),
@@ -641,8 +621,8 @@ def previsoes_prophet(
     }
 
 
-@app.get("/previsoes/prophet/todas")
-def previsoes_prophet_todas(
+@app.get("/previsoes/ml/todas")
+def previsoes_ml_todas(
     user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -659,7 +639,7 @@ def previsoes_prophet_todas(
         }
 
     # Cache populado — chama normalmente (retorna tudo do cache, não retreina)
-    return get_previsoes_todas_especialidades_prophet(db)
+    return get_previsoes_ml_todas(db)
 
 # ─── ZERAR FILAS ──────────────────────────────────────────
 @app.get("/zerarfilas")
@@ -700,7 +680,8 @@ def zerar_filas(
             "reducao_redistrib_pct": reducao_pct,
             "espera_media_meses": espera_meses,
             "meses_para_zeramento": meses_zeramento,
-            "aih_estimada_redistrib": redistrib_esp * 1500,
+            "aih_estimada_redistrib": redistrib_esp * VALOR_AIH_SIMULADO,
+            "espera_media_origem": ESPERA_MEDIA_ORIGEM,
             "urgencia": esp["urgencia"],
             "tendencia": esp["tendencia"],
         })
@@ -720,12 +701,15 @@ def zerar_filas(
             "fila_total_6m_com_redistrib": fila_total_6m_com,
             "total_pacientes_redistribuiveis": total_redistribuiveis,
             "total_aih_estimada": total_aih,
+            "aih_estimada_origem": "simulado",
             "reducao_total_pct": round(
                 (fila_total_6m_sem - fila_total_6m_com) / max(fila_total_6m_sem, 1) * 100, 1
             ),
         },
         "plano_por_especialidade": plano,
         "sugestoes_redistribuicao": redistrib["sugestoes"],
+        "origem": "simulado",
+        "aviso": "Plano simulado: série histórica estimada, espera média e valor de AIH são parâmetros fixos não validados.",
         "gerado_em": datetime.now().isoformat(),
     }
 
@@ -817,8 +801,8 @@ def analytics_validacao_mape(
     db: Session = Depends(get_db),
 ):
     """
-    MAPE real: compara previsão do modelo vs dados SIH realizados.
-    Prova técnica para o Programa Centelha (exige MAPE < 15%).
+    MAPE calculado: compara previsão do modelo vs dados SIH realizados.
+    Meta do projeto (proposta Centelha): MAPE < 15%.
     """
     from services.analytics_sih import get_validacao_mape
     return get_validacao_mape(db, especialidade=especialidade, meses_validacao=meses)
@@ -830,8 +814,8 @@ def analytics_espera_media(
     db: Session = Depends(get_db),
 ):
     """
-    Tempo médio de espera real por especialidade — calculado do SIH.
-    Substitui os valores hardcoded em ESPERA_MEDIA_ESP.
+    Permanência hospitalar média por especialidade (SIH, em meses).
+    Não é tempo de espera na fila; ESPERA_MEDIA_ESP continua sendo parâmetro fixo.
     """
     from services.analytics_sih import get_espera_media_real
     return get_espera_media_real(db)
