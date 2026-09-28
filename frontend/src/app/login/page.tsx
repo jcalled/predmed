@@ -10,6 +10,12 @@ const DEMO_USERS = [
   { label: '🏢 Hospital Particular', email: 'particular@predmed.com', role: 'São Raimundo — configura vagas SUS' },
 ]
 
+// Atalhos de demonstração: só em `next dev` ou com NEXT_PUBLIC_MOSTRAR_DEMO=1.
+// A senha de demo só funciona com o backend em APP_ENV=dev (ver README).
+const MOSTRAR_DEMO =
+  process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_MOSTRAR_DEMO === '1'
+const SENHA_DEMO = process.env.NEXT_PUBLIC_SENHA_DEMO || 'predmed123'
+
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -100,14 +106,15 @@ export default function LoginPage() {
           </form>
         </div>
 
-        {/* Demo users */}
+        {/* Demo users (somente desenvolvimento) */}
+        {MOSTRAR_DEMO && (
         <div className="mt-6">
-          <p className="text-xs text-center mb-3" style={{ color: 'var(--text2)' }}>Usuários de demonstração — senha: <span className="font-mono" style={{ color: 'var(--accent)' }}>predmed123</span></p>
+          <p className="text-xs text-center mb-3" style={{ color: 'var(--text2)' }}>Usuários de demonstração (ambiente de desenvolvimento) — senha: <span className="font-mono" style={{ color: 'var(--accent)' }}>{SENHA_DEMO}</span></p>
           <div className="space-y-2">
             {DEMO_USERS.map(u => (
               <button
                 key={u.email}
-                onClick={() => { setEmail(u.email); setPassword('predmed123') }}
+                onClick={() => { setEmail(u.email); setPassword(SENHA_DEMO) }}
                 className="w-full text-left px-4 py-3 rounded-lg transition-all"
                 style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
               >
@@ -117,6 +124,7 @@ export default function LoginPage() {
             ))}
           </div>
         </div>
+        )}
 
         <p className="text-center text-xs mt-6" style={{ color: 'var(--text2)' }}>
           Programa Centelha 3 — FUNCAP/CE · MVP local

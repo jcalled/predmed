@@ -28,6 +28,7 @@ from database import (
     Usuario, Tenant, PacienteFila, CapacidadeHospital,
     ConfigVagas, Transferencia
 )
+from config import get_cors_origins
 from auth import (
     hash_password, verify_password, create_token,
     get_current_user, require_sesa
@@ -98,7 +99,7 @@ app = FastAPI(title="PREDMED API", version="1.0.0") # Sem retreino
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=get_cors_origins(),  # CORS_ORIGINS (vírgula); padrão localhost só em dev
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
