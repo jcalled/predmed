@@ -1,0 +1,859 @@
+=== PAGE 1
+Resumo do negócio
+O PREDMED é um SaaS de IA que prevê, prioriza e redistribui ﬁlas cirúrgicas no SUS e hospitais privados, usando dados
+públicos do IntegraSUS e DATASUS. Resolve a crise de 68 mil cearenses em espera, reduzindo o tempo de espera em até
+40%. Primeira plataforma brasileira com IA preditiva + priorização clínica + redistribuição por CIR. Marketplace de dois lados:
+hospitais sobrecarregados redistribuem pacientes; hospitais ociosos recebem referências via AIH. Sem concorrente direto no
+Brasil.
+PREDMED – Plataforma de IA para Previsão e
+Otimização De Filas Médicas
+Inteligência Artiﬁcial e Machine Learning
+28/09/2026, 07:47 Programa Centelha | CE - PREDMED – Plataforma de IA para Previsão e Otimização De Filas Médicas
+https://ce.programacentelha.com.br/es1/projeto/imprimir/predmed-plataforma-de-ia-para-previsao-e-otimizacao-de-ﬁlas-medicas 1/21
+=== PAGE 2
+Solução - Descrição do produto/solução
+O PREDMED é um SaaS de inteligência artiﬁcial para prever, priorizar e otimizar ﬁlas cirúrgicas em hospitais públicos e
+privados, operando em modo somente leitura e integrando-se com IntegraSUS (SESA/CE) e DATASUS sem interferir em
+processos existentes.
+É a primeira plataforma brasileira que une IA preditiva + priorização clínica + redistribuição geográﬁca exclusivamente para
+ﬁlas cirúrgicas.
+Funcionalidade 1 — Previsão de Demanda: modelos de Machine Learning estimam o volume de cirurgias por especialidade
+para os próximos 30 a 90 dias, combinando histórico do DATASUS TabNet (SIH/SUS) com a ﬁla atual do IntegraSUS.
+Permite planejamento antecipado de equipes, salas e materiais cirúrgicos.
+Funcionalidade 2 — Priorização Inteligente: algoritmo avalia classiﬁcação SWALIS, tempo de espera e casos judicializados,
+recomendando ﬁla otimizada com prioridade para oncologia e cardiologia graves, em conformidade com a Lei 12.732/2012.
+Funcionalidade 3 — Redistribuição Geográﬁca: identiﬁca hospitais com capacidade ociosa dentro da mesma Comissão
+Intergestores Regional (CIR), sugerindo transferências viáveis geograﬁcamente. Potencial de redução de até 40% no tempo
+médio de espera.
+Diferencial competitivo: nenhum concorrente no Brasil combina as três capacidades com integração nativa ao IntegraSUS e
+DATASUS. Uso exclusivo de dados públicos permite validação com dados reais do Ceará sem convênios hospitalares no
+MVP.
+Benefícios: secretarias reduzem descumprimento de prazos legais; hospitais privados conveniados identiﬁcam demanda
+reprimida na CIR e aumentam receita via AIH; gestores substituem gestão reativa por planejamento preditivo.
+Roadmap pós-MVP: integração com Tasy, MV e RNDS/FHIR para redes hospitalares privadas.
+Solução - Estágio atual de desenvolvimento da solução
+Protótipo testado
+Solução - Estágio pretendido de desenvolvimento da Solução
+MVP
+Solução - Estratégia para o desenvolvimento do produto/solução
+a) Recursos necessários: consultoria PJ em ciência de dados e ML, UX/UI, integração de sistemas, jurídica e comercial.
+Infraestrutura AWS para desenvolvimento e homologação. Dados históricos de produção cirúrgica via DATASUS TabNet
+(SIH/SUS) e ﬁla atual via dados públicos do IntegraSUS (SESA/CE). b) O desenvolvimento técnico central (modelos de IA,
+arquitetura de dados, engenharia de dados e regras de negócio) será conduzido diretamente pelo proponente, que possui
+experiência consolidada em desenvolvimento de sistemas e IA aplicada à saúde. As consultorias PJ serão contratadas para
+apoio especializado em UX/UI, integração de sistemas, segurança da informação e apoio comercial, acelerando o
+desenvolvimento e garantindo qualidade técnica. Metodologia ágil com sprints quinzenais, entregas incrementais e
+validação contínua com gestores hospitalares reais. c) Pesquisas: extração de histórico cirúrgico do DATASUS TabNet
+(SIH/SUS) com mínimo 24 meses por especialidade, município e hospital no Ceará. Consumo contínuo da dados públicos
+do IntegraSUS para ﬁla em tempo real. Meta de acurácia: MAPE abaixo de 15%. Pesquisa de usabilidade com gestores,
+meta de score SUS acima de 70. d) Certiﬁcação: sistema opera em modo somente leitura como apoio à decisão, sem
+substituir protocolos médicos. Sem exigência de certiﬁcação ANVISA nesse estágio. Conformidade com LGPD desde o
+início: anonimização dos dados, criptograﬁa em trânsito e em repouso, contratos de processamento com parc
+Evidências do estágio de desenvolvimento da solução:
+28/09/2026, 07:47 Programa Centelha | CE - PREDMED – Plataforma de IA para Previsão e Otimização De Filas Médicas
+https://ce.programacentelha.com.br/es1/projeto/imprimir/predmed-plataforma-de-ia-para-previsao-e-otimizacao-de-ﬁlas-medicas 2/21
+=== PAGE 3
+Impacto - Impacto socioambiental
+O objetivo principal da solução proposta é resolver um desaﬁo socioambiental;
+Impacto - Desaﬁo/Ação socioambiental
+a) O PREDMED enfrenta diretamente a maior crise de acesso à saúde do Brasil: a ﬁla cirúrgica. No Ceará, 68 mil pacientes
+aguardavam cirurgias eletivas em 2023, com tempo médio de espera de 188 dias para oncologia — três vezes o limite legal
+de 60 dias da Lei 12.732/2012. Nacionalmente, a ﬁla supera 1 milhão de pacientes. O atraso cirúrgico causa agravamento
+de doenças, aumento de mortalidade evitável e sobrecarga emocional e econômica sobre famílias vulneráveis que
+dependem exclusivamente do SUS. A causa raiz não é falta de recursos: há centros cirúrgicos ociosos enquanto outros
+acumulam ﬁlas, por ausência de ferramentas de gestão inteligente. b) Impactos positivos gerados: redução do tempo de
+espera em até 40% via redistribuição geográﬁca entre unidades; priorização automática de casos oncológicos e
+cardiológicos graves, prevenindo mortes evitáveis; planejamento proativo de equipes e recursos cirúrgicos, reduzindo
+desperdício público; democratização do acesso a cirurgias para populações de baixa renda. Para hospitais privados, a
+otimização da ocupação cirúrgica gera eﬁciência econômica com reﬂexo direto na qualidade assistencial.
+Impacto - Potenciais impactos socioambientais negativos
+O PREDMED opera em modo somente leitura como ferramenta de apoio à decisão, sem interferir em sistemas hospitalares
+ou substituir julgamento clínico. Riscos gerenciados em três frentes. Viés algorítmico: modelos de ML podem reproduzir
+desigualdades na priorização. Mitigação: auditoria periódica dos algoritmos com revisão dos critérios clínicos e
+monitoramento de disparidades por região. Exclusão digital: hospitais com infraestrutura deﬁciente podem não se beneﬁciar
+igualmente. Mitigação: arquitetura leve compatível com baixa velocidade de conexão e suporte técnico incluído no contrato.
+Privacidade de dados: o sistema processa dados sensíveis de pacientes. Mitigação: conformidade com LGPD (Lei
+13.709/2018), anonimização nos modelos preditivos, criptograﬁa em trânsito e em repouso, e contratos de processamento
+com todas as instituições parceiras.
+28/09/2026, 07:47 Programa Centelha | CE - PREDMED – Plataforma de IA para Previsão e Otimização De Filas Médicas
+https://ce.programacentelha.com.br/es1/projeto/imprimir/predmed-plataforma-de-ia-para-previsao-e-otimizacao-de-ﬁlas-medicas 3/21
+=== PAGE 4
+Mercado - Descrição
+O PREDMED atua em mercado de alto potencial e baixa concorrência especializada. O Brasil possui cerca de 7.700
+hospitais ativos, sendo aproximadamente 4.500 públicos ou ﬁlantrópicos vinculados ao SUS e 3.200 privados. Todos
+enfrentam o desaﬁo de gerenciar ﬁlas cirúrgicas com ferramentas inadequadas.
+a) Tamanho e abrangência: o mercado endereçável imediato no Ceará compreende 102 hospitais com centro cirúrgico ativo
+(CNES/2024). Nacionalmente, o mercado potencial ultrapassa 2.000 hospitais com perﬁl de adoção de SaaS hospitalar. O
+setor healthtech brasileiro movimentou R$ 4,2 bilhões em 2023, com crescimento anual de 18%.
+b) Tendências: mercado em forte expansão, impulsionado pela digitalização do SUS pós-pandemia e pelo Programa de
+Informatização do Ministério da Saúde. A pressão por cumprimento dos prazos da Lei 12.732/2012 cria demanda crescente
+por ferramentas preditivas.
+c) Testes de mercado: análise dos dados públicos do IntegraSUS (SESA/CE) conﬁrmou viabilidade técnica do modelo
+preditivo com dados reais de ﬁlas cirúrgicas cearenses, cobrindo 184 municípios e dezenas de especialidades.
+d) Concorrentes: sistemas Tasy/Philips, MV Soul e Wareline oferecem apenas agendamento manual sem capacidade
+preditiva. Não existe concorrente direto no Brasil com as três capacidades combinadas do PREDMED.
+e) Canais de venda: consultoria comercial especializada em saúde para prospecção direta a gestores e secretarias;
+participação em editais EBSERH e PROADI-SUS; eventos do setor como HIMSS Brasil e Hospitalar.
+Mercado - Segmento de clientes
+O PREDMED opera como marketplace de dois lados atendendo três perﬁs distintos.
+Segmento 1 — Secretarias de saúde e hospitais públicos sobrecarregados: gestores com pressão legal pelo cumprimento
+da Lei 12.732/2012 que precisam redistribuir pacientes para unidades com capacidade ociosa. Necessidade central:
+visibilidade preditiva da ﬁla e ferramentas para redistribuição dentro da CIR. Público beneﬁciado: pacientes SUS de baixa
+renda sem alternativa ao sistema público.
+Segmento 2 — Hospitais públicos e privados conveniados com capacidade ociosa: unidades que aparecem nos dados
+públicos do IntegraSUS e podem aumentar receita via AIH recebendo pacientes redistribuídos. Necessidade: transformar
+capacidade ociosa em receita sem aumentar estrutura. O hospital privado conveniado usa o PREDMED também para
+abordar ativamente a Secretaria com dados reais de demanda reprimida na sua CIR, conseguindo credenciamento por
+iniciativa própria.
+Segmento 3 — Redes de saúde suplementar (pós-MVP): Hapvida, Unimed e redes regionais, com integração direta aos
+seus sistemas para otimização de ocupação cirúrgica e redução de cancelamentos.
+Em todos os segmentos, o decisor de compra é o diretor médico ou de operações. O usuário direto é o coordenador de
+regulação ou gestor cirúrgico. A demanda é comprovada pelos índices críticos do IntegraSUS e pela ausência de soluções
+preditivas no mercado brasileiro.
+Mercado - Modelo de negócio
+B2G2B - Venda para o governo e empresas
+Mercado -Monetização
+O PREDMED adota modelo SaaS com assinatura mensal recorrente por instituição, sem infraestrutura local.
+Preciﬁcação por perﬁl:
+- Hospital privado sem convênio SUS: R$ 3.500/mês — gestão interna da própria ﬁla.
+- Hospital privado conveniado com AIH: R$ 14.900/mês — acessa demanda reprimida da CIR e aumenta receita via AIH;
+ROI imediato considerando receita potencial de R$ 90k+/mês em cirurgias ociosas.
+- Secretaria municipal (todos os hospitais do município): R$ 18.000/mês.
+- SESA-CE (rede estadual completa): R$ 35.000/mês.
+- Taxa implementação: R$ 10.000
+28/09/2026, 07:47 Programa Centelha | CE - PREDMED – Plataforma de IA para Previsão e Otimização De Filas Médicas
+https://ce.programacentelha.com.br/es1/projeto/imprimir/predmed-plataforma-de-ia-para-previsao-e-otimizacao-de-ﬁlas-medicas 4/21
+=== PAGE 5
+Modelo marketplace de dois lados: hospitais sobrecarregados pagam para redistribuir pacientes; hospitais com capacidade
+ociosa pagam para receber referências e converter salas vazias em receita.
+Entrada no setor privado: contrato comercial direto. Piloto gratuito de 30 dias com acompanhamento intensivo e geração de
+case de resultado. Conversão para contrato anual com desconto de 15%.
+Entrada no setor público: piloto gratuito de 30 dias via termo de cooperação técnica, sem licitação. Contratação formal via
+dispensa de licitação para contratos até R$ 57.200/ano (Lei 14.133/2021) — aplicável ao tier de R$ 3.500/mês. Para
+contratos maiores: pregão eletrônico (secretarias municipais) ou concorrência pública (SESA-CE).
+Escalabilidade: arquitetura multitenant em nuvem com custo marginal mínimo. Expansão: Ceará →  Nordeste →  nacional.
+Ponto de equilíbrio com 20 clientes. Com 50 clientes, receita anual superior a R$ 3,6 milhões.
+Gestão - Gestão do negócio
+O PREDMED será gerido com metodologia ágil (Scrum quinzenal), com sprints de entregáveis mensuráveis e revisões
+periódicas com as consultorias contratadas.
+Métricas técnicas: acurácia dos modelos preditivos (meta: MAPE abaixo de 15%), número de municípios integrados via
+IntegraSUS e NPS dos usuários piloto acima de 70.
+Métricas de negócio: taxa de conversão piloto para contrato, receita recorrente mensal e custo de aquisição por cliente.
+Ferramentas: ClickUp para gestão de tarefas e documentação; GitHub para controle de versão; AWS para infraestrutura
+cloud; Metabase para dashboards internos de KPIs.
+Áreas estruturadas: desenvolvimento técnico (ML e integrações), produto e UX, comercial (prospecção e licitações públicas).
+Relatórios mensais de progresso serão produzidos e compartilhados com a FUNCAP conforme exigido pelo Termo de
+Outorga.
+Gestão - Grau de maturidade atual do negócio
+Identiﬁcação dos requisitos do cliente: o público-alvo foi consultado e suas necessidades constatadas.
+Gestão - Grau de maturidade pretendido do negócio
+Aplicação/Validação no cliente: o produto foi aplicado e validado junto ao cliente.
+Sobre a equipe
+Região: Fortaleza
+JOSE MARCAL DOMINGOS JUNIOR
+Papel:  | Formação:  Pós-Graduação (cursando) (Centro Universitário Estácio Do Ceará) | Lattes/Linkedin:  https://www.linkedin.com/in/jrmarcal
+Responsável pela coordenação técnica geral do PREDMED. Atua no desenvolvimento do backend (Node.js, Python) e
+frontend (react), arquitetura do banco de dados PostgreSQL, integração com dados públicos do IntegraSUS e DATASUS,
+treinamento e validação dos modelos preditivos de Machine Learning, e supervisão das consultorias PJ contratadas.
+Também responsável pela gestão do projeto, relatórios à FUNCAP e tomada de decisão técnica e estratégica durante os
+12 meses de execução.
+28/09/2026, 07:47 Programa Centelha | CE - PREDMED – Plataforma de IA para Previsão e Otimização De Filas Médicas
+https://ce.programacentelha.com.br/es1/projeto/imprimir/predmed-plataforma-de-ia-para-previsao-e-otimizacao-de-ﬁlas-medicas 5/21
+=== PAGE 6
+Historico - Nº do CNPJ
+Historico - Data de criação
+56 versões salvas
+Ultima versão 1.55 salva em 27/02/2026 às 15:50
+56 versões postadas
+Ultima versão 1.55 postada em 27/02/2026 às 15:50
+28/09/2026, 07:47 Programa Centelha | CE - PREDMED – Plataforma de IA para Previsão e Otimização De Filas Médicas
+https://ce.programacentelha.com.br/es1/projeto/imprimir/predmed-plataforma-de-ia-para-previsao-e-otimizacao-de-ﬁlas-medicas 6/21
+=== PAGE 7
+Cronograma de Execução
+Etapa 1
+28/09/2026, 07:47 Programa Centelha | CE - PREDMED – Plataforma de IA para Previsão e Otimização De Filas Médicas
+https://ce.programacentelha.com.br/es1/projeto/imprimir/predmed-plataforma-de-ia-para-previsao-e-otimizacao-de-ﬁlas-medicas 7/21
+=== PAGE 8
+# Atividade Descrição Indicadores Início Fim
+1 Constituição da
+empresa e
+estruturação
+jurídica
+Abertura da empresa (CNPJ
+ME/EPP), elaboração de
+contrato social, registro na Junta
+Comercial do Ceará, abertura de
+conta Bradesco exclusiva para o
+projeto e contratação de
+escritório de
+contabilidade.Abertura da
+empresa (CNPJ), elaboração de
+contrato social, registro na Junta
+Comercial do Ceará, abertura de
+conta bancária exclusiva para o
+projeto e contratação de
+escritório de contabilidade para
+gestão ﬁnanceira do período de
+execução.
+Empresa constituída
+com CNPJ ativo;
+conta bancária
+aberta; contrato
+contábil assinado
+19/06/2026 31/07/2026
+2 Conﬁguração da
+infraestrutura cloud
+Provisionamento de ambiente
+AWS (EC2, RDS PostgreSQL,
+S3), conﬁguração de CI/CD no
+GitHub Actions, deﬁnição de
+arquitetura de segurança
+conforme LGPD, implementação
+de ambientes de
+desenvolvimento, homologação
+e produção separados.
+Ambientes AWS
+conﬁgurados; pipeline
+CI/CD funcional;
+documentação de
+arquitetura entregue
+19/06/2026 15/08/2026
+3 Contratação das
+consultorias
+especializadas
+Seleção e contratação de
+consultorias PJ nas áreas de
+ciência de dados e ML, UX/UI,
+integração de sistemas, jurídica
+e comercial. Deﬁnição de
+escopo, entregas e cronograma
+individual de cada consultoria
+conforme plano de aplicação de
+recursos aprovados.
+5 contratos de
+consultoria PJ
+assinados;
+cronogramas
+individuais
+estabelecidos
+19/06/2026 31/07/2026
+4 Coleta e
+estruturação dos
+dados para
+treinamento dos
+modelos
+Extração de dados históricos de
+produção cirúrgica do DATASUS
+TabNet (SIH/SUS) por
+especialidade, município e
+hospital no Ceará com mínimo
+24 meses de histórico.
+Mapeamento e coleta contínua
+dos dados públicos do
+IntegraSUS para captura da ﬁla
+atual. Estruturação dos datasets
+combinados DATASUS e
+IntegraSUS para treinamento
+dos modelos de ML.
+Dataset histórico
+DATASUS/SIH
+estruturado com 24
+meses; coleta
+automatizada
+IntegraSUS
+conﬁgurada;
+documentação dos
+dados entregue
+01/07/2026 31/08/2026
+28/09/2026, 07:47 Programa Centelha | CE - PREDMED – Plataforma de IA para Previsão e Otimização De Filas Médicas
+https://ce.programacentelha.com.br/es1/projeto/imprimir/predmed-plataforma-de-ia-para-previsao-e-otimizacao-de-ﬁlas-medicas 8/21
+=== PAGE 9
+# Atividade Descrição Indicadores Início Fim
+5 Validação do
+roadmap com
+gestores
+hospitalares
+Realização de entrevistas com
+gestores hospitalares e
+coordenadores de regulação do
+Ceará para validação das
+funcionalidades prioritárias do
+MVP, identiﬁcação de hospitais
+parceiros para o piloto e criação
+dos wireframes iniciais pela
+consultoria UX/UI com base nas
+necessidades reais dos usuários.
+5 entrevistas
+realizadas; 1
+hospitais parceiros
+identiﬁcados para
+piloto; wireframes
+aprovados
+01/07/2026 31/08/2026
+28/09/2026, 07:47 Programa Centelha | CE - PREDMED – Plataforma de IA para Previsão e Otimização De Filas Médicas
+https://ce.programacentelha.com.br/es1/projeto/imprimir/predmed-plataforma-de-ia-para-previsao-e-otimizacao-de-ﬁlas-medicas 9/21
+=== PAGE 10
+Etapa 2
+28/09/2026, 07:47 Programa Centelha | CE - PREDMED – Plataforma de IA para Previsão e Otimização De Filas Médicas
+https://ce.programacentelha.com.br/es1/projeto/imprimir/predmed-plataforma-de-ia-para-previsao-e-otimizacao-de-ﬁlas-medicas 10/21
+=== PAGE 11
+# Atividade Descrição Indicadores Início Fim
+1 Aprimoramento dos
+modelos preditivos
+de demanda
+Aprimoramento e retreinamento
+dos modelos preditivos
+existentes (Prophet, ARIMA e
+XGBoost) com dados reais do
+DATASUS TabNet (histórico de
+produção cirúrgica) combinados
+com snapshots da ﬁla atual do
+IntegraSUS, substituindo dados
+simulados por dados reais do
+Ceará por especialidade e
+município. Meta de acurácia
+MAPE abaixo de 15%.
+Modelos retreinados
+com dados reais
+DATASUS e
+IntegraSUS; acurácia
+MAPE abaixo de 15%
+validada; relatório
+técnico entregue. No
+modelo MAPE (Erro
+Percentual Absoluto
+Médio), quanto menor
+o valor, melhor é a
+acurácia (precisão)
+do modelo de
+previsão.
+01/09/2026 31/10/2026
+2 Aprimoramento do
+algoritmo de
+priorização clínica
+Evolução do algoritmo de scoring
+existente incorporando a
+classiﬁcação SWALIS do
+IntegraSUS (categorias A1, B, C,
+D), casos judicializados e tempo
+de espera para gerar ﬁla
+otimizada automaticamente em
+conformidade com a Lei
+12.732/2012, priorizando casos
+oncológicos e cardiológicos
+graves.
+Algoritmo atualizado
+com classiﬁcação
+SWALIS real; testes
+de conformidade com
+Lei 12.732
+documentados
+01/09/2026 15/11/2026
+3 Evolução do módulo
+de redistribuição
+geográﬁca
+Aprimoramento do módulo
+existente com análise espacial
+combinando ﬁla atual do
+IntegraSUS e histórico de
+produção do DATASUS TabNet
+por hospital, calculando índice de
+pressão por unidade e
+especialidade e gerando
+sugestões de redistribuição de
+pacientes com visualização em
+mapa interativo por município.
+Módulo funcional com
+dados reais; índice de
+pressão calculado por
+hospital; mapa
+interativo operacional
+15/09/2026 30/11/2026
+4 Desenvolvimento da
+interface e
+dashboard de
+gestão
+Criação da interface web
+responsiva pela consultoria
+UX/UI integrando todas as
+funcionalidades do protótipo
+evoluído em dashboard uniﬁcado
+com KPIs, alertas de gargalos
+por especialidade, relatórios
+exportáveis e mapa geográﬁco
+para gestores hospitalares e
+secretarias de saúde.
+Interface aprovada
+em teste de
+usabilidade com 5
+gestores reais; score
+SUS acima de 70
+01/09/2026 30/11/2026
+28/09/2026, 07:47 Programa Centelha | CE - PREDMED – Plataforma de IA para Previsão e Otimização De Filas Médicas
+https://ce.programacentelha.com.br/es1/projeto/imprimir/predmed-plataforma-de-ia-para-previsao-e-otimizacao-de-ﬁlas-medicas 11/21
+=== PAGE 12
+# Atividade Descrição Indicadores Início Fim
+5 Integração
+automatizada com
+API pública do
+IntegraSUS
+Implementação da integração
+automatizada com a API pública
+do IntegraSUS para consumo de
+dados em tempo real de ﬁlas
+cirúrgicas estaduais, substituindo
+entrada manual de dados do
+protótipo atual. Conﬁguração de
+rotinas automáticas de coleta,
+tratamento e atualização dos
+dados no sistema sem
+intervenção manual.
+Integração
+IntegraSUS
+automatizada em
+produção; atualização
+de dados sem
+intervenção manual
+conﬁgurada
+01/09/2026 30/11/2026
+28/09/2026, 07:47 Programa Centelha | CE - PREDMED – Plataforma de IA para Previsão e Otimização De Filas Médicas
+https://ce.programacentelha.com.br/es1/projeto/imprimir/predmed-plataforma-de-ia-para-previsao-e-otimizacao-de-ﬁlas-medicas 12/21
+=== PAGE 13
+Etapa 3
+28/09/2026, 07:47 Programa Centelha | CE - PREDMED – Plataforma de IA para Previsão e Otimização De Filas Médicas
+https://ce.programacentelha.com.br/es1/projeto/imprimir/predmed-plataforma-de-ia-para-previsao-e-otimizacao-de-ﬁlas-medicas 13/21
+=== PAGE 14
+# Atividade Descrição Indicadores Início Fim
+1 Implantação do
+piloto em hospital
+público
+Instalação e conﬁguração do
+PREDMED em unidade
+hospitalar pública parceira no
+Ceará via termo de cooperação
+técnica sem custo ao hospital,
+treinamento da equipe gestora,
+coleta de feedback estruturado e
+acompanhamento quinzenal dos
+KPIs de redução de espera
+durante os 90 dias de piloto.
+Sistema em produção
+no hospital piloto;
+relatórios quinzenais
+de KPIs
+documentados;
+redução mensurável
+do tempo de espera
+registrada
+01/12/2026 28/02/2027
+2 Prospecção
+comercial ativa
+junto a secretarias e
+hospitais
+Consultoria comercial
+especializada em saúde realiza
+prospecção direta junto a
+secretarias municipais de saúde
+e hospitais privados conveniados
+ao SUS no Ceará, apresentando
+o PREDMED, agendando
+demonstrações com gestores e
+mapeando oportunidades de
+contratação via dispensa de
+licitação e credenciamento
+municipal.
+Mínimo 15
+demonstrações
+realizadas; 3
+propostas comerciais
+enviadas; 1 processo
+de contratação
+pública mapeado
+01/12/2026 28/02/2027
+3 Ajustes e melhorias
+baseados no piloto
+Análise sistemática dos
+feedbacks coletados no piloto,
+correção de problemas
+identiﬁcados em ambiente real,
+ajuste ﬁno dos modelos
+preditivos com dados reais do
+hospital parceiro e
+implementação de melhorias
+priorizadas pelos gestores
+usuários do sistema.
+Lista de melhorias
+implementadas
+documentada; nova
+versão publicada;
+acurácia dos modelos
+atualizada com dados
+do piloto
+15/12/2026 28/02/2027
+4 Registro de
+propriedade
+intelectual no INPI
+Elaboração e depósito de pedido
+de registro de software no INPI
+com apoio da consultoria
+jurídica, documentando os
+algoritmos proprietários de
+priorização clínica baseada em
+classiﬁcação SWALIS e
+redistribuição geográﬁca por
+índice de pressão hospitalar.
+Pedido de registro
+protocolado no INPI;
+número de protocolo
+obtido
+01/12/2026 31/01/2027
+5 Produção de cases,
+materiais
+comerciais e site
+institucional
+Documentação dos resultados
+do piloto em formato de case
+study com dados reais, produção
+de materiais de vendas para
+licitações públicas e contratos
+privados, desenvolvimento de
+site institucional do PREDMED
+com apresentação da solução,
+cases e formulário de contato
+para captação de leads, e
+elaboração de minuta de
+contrato SaaS pela consultoria
+jurídica.
+1 case documentado
+com dados reais do
+piloto; kit comercial
+completo produzido;
+minuta de contrato
+SaaS aprovada
+01/01/2027 28/02/2027
+28/09/2026, 07:47 Programa Centelha | CE - PREDMED – Plataforma de IA para Previsão e Otimização De Filas Médicas
+https://ce.programacentelha.com.br/es1/projeto/imprimir/predmed-plataforma-de-ia-para-previsao-e-otimizacao-de-ﬁlas-medicas 14/21
+=== PAGE 15
+Etapa 4
+28/09/2026, 07:47 Programa Centelha | CE - PREDMED – Plataforma de IA para Previsão e Otimização De Filas Médicas
+https://ce.programacentelha.com.br/es1/projeto/imprimir/predmed-plataforma-de-ia-para-previsao-e-otimizacao-de-ﬁlas-medicas 15/21
+=== PAGE 16
+# Atividade Descrição Indicadores Início Fim
+1 Iniciação dos
+processos de
+contratação formal
+Envio de propostas comerciais
+formais para secretarias
+municipais e hospitais
+prospectados, iniciação de
+processos de contratação via
+dispensa de licitação para
+contratos anuais abaixo de R$
+57.200 conforme Lei
+14.133/2021, credenciamento
+municipal ou licitação
+simpliﬁcada conforme perﬁl de
+cada cliente.
+Mínimo 1 proposta
+formal aceita; mínimo
+1 processo de
+contratação pública
+iniciado
+01/03/2027 30/04/2027
+2 Expansão da
+prospecção para
+outros estados do
+Nordeste
+Consultoria comercial expande
+prospecção para secretarias
+estaduais e municipais do
+Nordeste com maior déﬁcit
+cirúrgico documentado no
+DATASUS, participação em
+eventos do setor como HIMSS
+Brasil e Hospitalar 2027, e envio
+de propostas formais para
+gestores fora do Ceará.
+Mínimo 3 estados
+nordestinos
+prospectados; 5
+propostas enviadas
+fora do Ceará
+01/03/2027 31/05/2027
+3 Estruturação do
+suporte e Customer
+Success
+Implementação de sistema de
+tickets via ClickUp, criação de
+base de conhecimento e
+manuais para gestores
+hospitalares, deﬁnição de SLA de
+atendimento e criação do
+processo padronizado de
+onboarding para novos clientes
+públicos e privados conveniados.
+Sistema de suporte
+operacional;
+documentação de
+usuário publicada;
+SLA de atendimento
+deﬁnido
+01/03/2027 30/04/2027
+4 Prestação de contas
+e relatório ﬁnal
+FUNCAP
+Elaboração do relatório ﬁnal de
+execução do projeto para a
+FUNCAP documentando todas
+as atividades realizadas,
+recursos utilizados, resultados
+alcançados versus metas
+estabelecidas e impactos
+gerados na gestão de ﬁlas
+cirúrgicas, com prestação de
+contas ﬁnanceira completa e
+comprovantes.
+Relatório ﬁnal
+entregue à FUNCAP
+dentro do prazo;
+prestação de contas
+ﬁnanceira completa
+01/04/2027 31/05/2027
+5 Planejamento da
+próxima fase de
+crescimento
+Elaboração do plano de
+expansão nacional com base nos
+resultados do piloto,
+mapeamento de editais de
+inovação em saúde como
+PROADI-SUS e EBSERH,
+identiﬁcação de aceleradoras
+healthtech para captação da
+próxima rodada e atualização do
+pitch deck com dados reais de
+impacto gerado.
+Plano de expansão
+nacional
+documentado;
+mínimo 2 editais
+mapeados; pitch deck
+atualizado com
+resultados reais
+01/04/2027 31/05/2027
+28/09/2026, 07:47 Programa Centelha | CE - PREDMED – Plataforma de IA para Previsão e Otimização De Filas Médicas
+https://ce.programacentelha.com.br/es1/projeto/imprimir/predmed-plataforma-de-ia-para-previsao-e-otimizacao-de-ﬁlas-medicas 16/21
+=== PAGE 17
+Orçamento Geral
+Subvenção Total: R$ 85.752,00Contrapartida Total: R$ 4.288,00Valor Total: R$ 90.040,00
+Itens de Capital
+Item / Rubrica Origem Descrição Qtd. Vl. Unitário Vl. Total
+Equipamentos e
+material permanente
+Subvenção . 1 R$ 0 R$ 0,00
+Total Subvenção (Capital):R$ 0,00
+Total Contrapartida (Capital):R$ 0,00
+Subtotal Capital:R$ 0,00
+28/09/2026, 07:47 Programa Centelha | CE - PREDMED – Plataforma de IA para Previsão e Otimização De Filas Médicas
+https://ce.programacentelha.com.br/es1/projeto/imprimir/predmed-plataforma-de-ia-para-previsao-e-otimizacao-de-ﬁlas-medicas 17/21
+=== PAGE 18
+Itens de Custeio
+Rubrica Origem Descrição Qtd. Vl. Unitário Vl. Total
+Serviços de Terceiros
+de Pessoa Jurídica
+Subvenção Consultoria PJ
+especializada em
+ciência de dados
+e Machine
+Learning para
+aprimoramento
+dos modelos
+preditivos com
+dados reais do
+DATASUS TabNet
+e IntegraSUS,
+retreinamento dos
+algoritmos de
+previsão de
+demanda e
+priorização
+clínica, com meta
+de acurácia
+MAPE abaixo de
+15%.
+1 R$ 16000 R$ 16.000,00
+Serviços de Terceiros
+de Pessoa Jurídica
+Subvenção Consultoria PJ
+comercial
+especializada em
+saúde — setor
+público.
+Prospecção junto
+a secretarias
+municipais,
+mapeamento de
+editais e
+licitações,
+agendamento de
+reuniões com
+gestores do SUS
+e elaboração de
+termos de
+cooperação
+técnica para
+pilotos.
+1 R$ 14000 R$ 14.000,00
+Total Subvenção (Custeio):R$ 85.752,00
+Total Contrapartida (Custeio):R$ 4.288,00
+Subtotal Custeio:R$ 90.040,00
+28/09/2026, 07:47 Programa Centelha | CE - PREDMED – Plataforma de IA para Previsão e Otimização De Filas Médicas
+https://ce.programacentelha.com.br/es1/projeto/imprimir/predmed-plataforma-de-ia-para-previsao-e-otimizacao-de-ﬁlas-medicas 18/21
+=== PAGE 19
+Rubrica Origem Descrição Qtd. Vl. Unitário Vl. Total
+Serviços de Terceiros
+de Pessoa Jurídica
+Subvenção Consultoria PJ
+comercial
+especializada em
+saúde — setor
+privado.
+Prospecção junto
+a hospitais
+privados
+conveniados ao
+SUS,
+agendamento de
+demonstrações
+com diretores
+médicos e de
+operações,
+elaboração de
+propostas
+comerciais e
+conversão para
+contratos anuais.
+1 R$ 12000 R$ 12.000,00
+Serviços de Terceiros
+de Pessoa Jurídica
+Subvenção Consultoria PJ de
+UX/UI para
+criação da
+interface web
+responsiva,
+desenvolvimento
+de wireframes,
+testes de
+usabilidade com
+gestores
+hospitalares reais
+e reﬁnamento do
+dashboard com
+meta de score
+SUS acima de 70.
+1 R$ 10000 R$ 10.000,00
+Serviços de Terceiros
+de Pessoa Jurídica
+Subvenção Consultoria PJ de
+integração de
+sistemas para
+implementação
+da coleta
+automatizada dos
+dados públicos do
+IntegraSUS,
+conﬁguração da
+infraestrutura
+AWS (EC2, RDS
+PostgreSQL, S3)
+e pipeline CI/CD
+no GitHub
+Actions.
+1 R$ 10000 R$ 10.000,00
+Total Subvenção (Custeio):R$ 85.752,00
+Total Contrapartida (Custeio):R$ 4.288,00
+Subtotal Custeio:R$ 90.040,00
+28/09/2026, 07:47 Programa Centelha | CE - PREDMED – Plataforma de IA para Previsão e Otimização De Filas Médicas
+https://ce.programacentelha.com.br/es1/projeto/imprimir/predmed-plataforma-de-ia-para-previsao-e-otimizacao-de-ﬁlas-medicas 19/21
+=== PAGE 20
+Rubrica Origem Descrição Qtd. Vl. Unitário Vl. Total
+Serviços de Terceiros
+de Pessoa Jurídica
+Subvenção Consultoria PJ
+jurídica para
+abertura da
+empresa,
+elaboração de
+contratos SaaS
+para ambiente
+hospitalar público
+e privado, registro
+de propriedade
+intelectual no
+INPI,
+conformidade
+com LGPD e
+elaboração de
+termos de
+cooperação
+técnica para os
+pilotos.
+1 R$ 10000 R$ 10.000,00
+Serviços de Terceiros
+de Pessoa Jurídica
+Subvenção Serviços
+contábeis
+mensais para
+gestão ﬁnanceira
+do projeto,
+emissão de
+relatórios de
+execução
+orçamentária e
+prestação de
+contas à
+FUNCAP
+conforme exigido
+pelo Termo de
+Outorga.
+12 R$ 350 R$ 4.200,00
+Material de consumoSubvenção Infraestrutura
+AWS (EC2, RDS
+PostgreSQL, S3),
+licenças de
+software,
+ferramentas de
+desenvolvimento
+e APIs de
+terceiros
+necessárias
+durante os 12
+meses de
+execução do
+projeto.
+12 R$ 796 R$ 9.552,00
+Total Subvenção (Custeio):R$ 85.752,00
+Total Contrapartida (Custeio):R$ 4.288,00
+Subtotal Custeio:R$ 90.040,00
+28/09/2026, 07:47 Programa Centelha | CE - PREDMED – Plataforma de IA para Previsão e Otimização De Filas Médicas
+https://ce.programacentelha.com.br/es1/projeto/imprimir/predmed-plataforma-de-ia-para-previsao-e-otimizacao-de-ﬁlas-medicas 20/21
+=== PAGE 21
+Rubrica Origem Descrição Qtd. Vl. Unitário Vl. Total
+Material de consumoContrapartida Material de
+consumo
+complementar
+para suporte ao
+desenvolvimento
+do MVP, incluindo
+licenças
+adicionais,
+insumos técnicos
+e despesas
+operacionais do
+projeto.
+1 R$ 4288 R$ 4.288,00
+Total Subvenção (Custeio):R$ 85.752,00
+Total Contrapartida (Custeio):R$ 4.288,00
+Subtotal Custeio:R$ 90.040,00
+28/09/2026, 07:47 Programa Centelha | CE - PREDMED – Plataforma de IA para Previsão e Otimização De Filas Médicas
+https://ce.programacentelha.com.br/es1/projeto/imprimir/predmed-plataforma-de-ia-para-previsao-e-otimizacao-de-ﬁlas-medicas 21/21

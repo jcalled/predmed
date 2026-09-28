@@ -1,0 +1,41 @@
+# Ambientes e dependências
+venv/
+.venv/
+**/venv/
+node_modules/
+**/node_modules/
+__pycache__/
+*.pyc
+
+# Build
+frontend/.next/
+.next/
+*.tsbuildinfo
+
+# Dados — NUNCA versionar (LGPD: fila IntegraSUS contém dados de pacientes)
+*.db
+*.sqlite
+*.sqlite3
+*.dbc
+*.csv
+backend/data/
+backend/prophet_models/
+backend/lightning_logs/
+lightning_logs/
+*.ckpt
+*.bin
+*.pkl
+
+# Segredos
+.env
+.env.*
+!.env.example
+
+# Sistema / logs / temporários
+.DS_Store
+*.log
+*.old
+*.tar.gz
+
+# Claude Code: configurações locais
+.claude/settings.local.json
