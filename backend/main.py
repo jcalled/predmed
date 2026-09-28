@@ -5,7 +5,7 @@ Multi-tenant, role-based, dados reais IntegraSUS + DATASUS
 from fastapi import FastAPI, Depends, HTTPException, Body, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from sqlalchemy import func, extract
+from sqlalchemy import func, extract, false
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime, date
@@ -186,6 +186,40 @@ def dashboard(
     return get_dashboard_kpis(db, user.role, user.tenant_id)
 
 
+# ─── ESCOPO DE DADOS POR INSTITUIÇÃO ───────────────────────
+# Regra atual (README, "Quem vê o quê"): hospital_publico vê só a fila do próprio
+# hospital. O vínculo tenant → hospital ainda é feito pelo 1º termo do nome do
+# tenant (ex.: "HGF ..." → hospital_nome ILIKE '%HGF%'). Enquanto não houver
+# vínculo por CNES, falhamos fechado quando a chave é genérica ou ausente.
+# SESA, SMS e hospital_particular: sem filtro (regra pendente de decisão, ver README).
+_CHAVES_GENERICAS = {
+    "HOSPITAL", "HOSP", "HOSP.", "INSTITUTO", "CENTRO", "CLINICA", "CLÍNICA",
+    "SECRETARIA", "SMS", "SESA", "UNIDADE", "MATERNIDADE", "SANTA", "SAO", "SÃO",
+}
+
+
+def _chave_hospital_do_tenant(db: Session, user: Usuario) -> Optional[str]:
+    """Chave de nome do hospital do usuário, ou None se não for seguro filtrar."""
+    tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id).first() if user.tenant_id else None
+    if not tenant or not tenant.nome or not tenant.nome.split():
+        return None
+    chave = tenant.nome.upper().split()[0]
+    if len(chave) < 3 or chave in _CHAVES_GENERICAS:
+        logger.warning("Tenant %s com nome genérico: escopo de hospital não resolvido", tenant.id)
+        return None
+    return chave
+
+
+def _filtrar_pacientes_por_escopo(q, db: Session, user: Usuario):
+    """Aplica o escopo de instituição a uma query de PacienteFila."""
+    if user.role == "hospital_publico":
+        chave = _chave_hospital_do_tenant(db, user)
+        if chave is None:
+            return q.filter(false())  # falha fechado: sem vínculo confiável, nada é exibido
+        return q.filter(PacienteFila.hospital_nome.ilike(f"%{chave}%"))
+    return q
+
+
 # ─── FILA CIRÚRGICA ───────────────────────────────────────
 @app.get("/fila")
 def fila(
@@ -198,14 +232,9 @@ def fila(
     user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    q = db.query(PacienteFila)
-
     # hospital_publico vê só a fila do seu próprio hospital
-    if user.role == "hospital_publico":
-        tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id).first()
-        if tenant:
-            hosp_key = tenant.nome.upper().split()[0]
-            q = q.filter(PacienteFila.hospital_nome.ilike(f"%{hosp_key}%"))
+    escopo = _filtrar_pacientes_por_escopo(db.query(PacienteFila), db, user)
+    q = escopo
 
     if especialidade:
         q = q.filter(PacienteFila.especialidade.ilike(f"%{especialidade}%"))
@@ -227,16 +256,15 @@ def fila(
     )
     rows = q.order_by(swalis_order).offset((page - 1) * limit).limit(limit).all()
 
-    # Stats gerais
+    # Stats gerais — dentro do escopo da instituição (antes ignoravam o filtro)
     stats = {
         "total": total,
-        "a1": db.query(func.count(PacienteFila.id)).filter(
-            PacienteFila.classif_swalis == "Categoria A1").scalar() or 0,
-        "judicializados": db.query(func.count(PacienteFila.id)).filter(
-            PacienteFila.judicializado == True).scalar() or 0,
+        "a1": escopo.filter(PacienteFila.classif_swalis == "Categoria A1").count(),
+        "judicializados": escopo.filter(PacienteFila.judicializado == True).count(),
         "especialidades": [
             {"nome": e, "total": n}
-            for e, n in db.query(PacienteFila.especialidade, func.count(PacienteFila.id))
+            for e, n in _filtrar_pacientes_por_escopo(
+                db.query(PacienteFila.especialidade, func.count(PacienteFila.id)), db, user)
             .group_by(PacienteFila.especialidade)
             .order_by(func.count(PacienteFila.id).desc()).limit(10).all()
         ],
@@ -353,9 +381,11 @@ def historico_transferencias(
     if user.role == "hospital_particular":
         q = q.filter(Transferencia.tenant_destino_id == user.tenant_id)
     elif user.role == "hospital_publico":
-        tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id).first()
-        if tenant:
-            q = q.filter(Transferencia.hospital_origem.ilike(f"%{tenant.nome.split()[0]}%"))
+        chave = _chave_hospital_do_tenant(db, user)
+        if chave is None:
+            q = q.filter(false())
+        else:
+            q = q.filter(Transferencia.hospital_origem.ilike(f"%{chave}%"))
 
     rows = q.order_by(Transferencia.data_aprovacao.desc()).limit(50).all()
     return {
@@ -481,12 +511,13 @@ def priorizacao(
          "Categoria C": 3, "Categoria D": 4},
         value=PacienteFila.classif_swalis, else_=5
     )
-    top = db.query(PacienteFila).order_by(swalis_order).limit(20).all()
+    top = _filtrar_pacientes_por_escopo(db.query(PacienteFila), db, user) \
+        .order_by(swalis_order).limit(20).all()
 
-    dist = db.query(
+    dist = _filtrar_pacientes_por_escopo(db.query(
         PacienteFila.classif_swalis,
         func.count(PacienteFila.id).label("n")
-    ).group_by(PacienteFila.classif_swalis).all()
+    ), db, user).group_by(PacienteFila.classif_swalis).all()
 
     return {
         "top_prioritarios": [
@@ -515,13 +546,13 @@ def judicializados(
     user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    rows = db.query(PacienteFila).filter(
+    base = _filtrar_pacientes_por_escopo(db.query(PacienteFila), db, user).filter(
         PacienteFila.judicializado == True
-    ).limit(100).all()
+    )
+    rows = base.limit(100).all()
 
     return {
-        "total": db.query(func.count(PacienteFila.id)).filter(
-            PacienteFila.judicializado == True).scalar() or 0,
+        "total": base.count(),
         "pacientes": [
             {
                 "id": p.id, "iniciais": p.iniciais,
@@ -545,9 +576,8 @@ def relatorio_resumo(
 
     # Filtra hospitais por role
     if user.role == "hospital_publico":
-        tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id).first()
-        nome_key = tenant.nome.split()[0] if tenant else ""
-        hosp = [h for h in hosp if nome_key.upper() in h["hospital_nome"].upper()]
+        chave = _chave_hospital_do_tenant(db, user)
+        hosp = [h for h in hosp if chave and chave in h["hospital_nome"].upper()]
 
     return {
         "kpis": kpis,

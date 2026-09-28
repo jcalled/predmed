@@ -133,6 +133,14 @@ Ou faça upload via interface web em **Configurações → Importação de Dados
 | **Configurações → Importar CSV** | ✅ | ❌ | ❌ |
 | Relatórios | ✅ Ceará | ✅ seu hosp. | ✅ seu hosp. |
 
+Notas (Sprint 1, testes em `backend/tests/test_isolamento_tenant.py`):
+- **Hospital público**: o escopo "só o seu hospital" agora vale também para `/priorizacao`, `/judicializados` e para as estatísticas de `/fila` (antes mostravam dados do estado todo).
+- O vínculo tenant → hospital ainda usa o **1º termo do nome do tenant** (ex.: "HGF ..."). Se esse termo for genérico ("Hospital", "Instituto"...) ou faltar, a API **não mostra pacientes** (falha fechado). Solução definitiva pendente: vincular tenant ao hospital por CNES.
+- **Decisões pendentes** (não implementadas; testes `xfail` documentam a proposta do arquiteto):
+  1. Perfil **SMS** (não consta nesta tabela): limitar ao `municipio_gestor`/CIR?
+  2. **Hospital particular** deve ver iniciais de pacientes de todo o estado na fila, priorização e judicializados?
+  3. Hospital público/particular devem ver priorização e judicializados de outras instituições (hoje: só o próprio, no caso do público)?
+
 ---
 
 ## Endpoints principais da API
