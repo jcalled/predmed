@@ -1,13 +1,11 @@
 """
 Isolamento entre instituições (antecipação de B23 / T07). Dados 100% sintéticos.
 
-Referência: README, tabela "Multi-tenant — Quem vê o quê".
-- SESA: vê tudo.
-- hospital_publico: fila só do próprio hospital (estendido a /priorizacao,
-  /judicializados e às estatísticas da fila, que antes vazavam o estado todo).
-- hospital_particular: README diz "tudo" na fila → comportamento mantido.
-- SMS: não consta no README → regra pendente (testes xfail documentam a proposta
-  do arquiteto sem decidir por ela).
+Referência: README, tabela "Multi-tenant — Quem vê o quê" (regras decididas em 28/09/2026).
+- SESA e SMS: veem o estado inteiro.
+- hospital_publico: fila detalhada só do próprio hospital; priorização e
+  judicializados de todas as instituições, sem iniciais de outros hospitais.
+- hospital_particular: linhas só do próprio hospital; do resto, apenas agregados.
 """
 import pytest
 
@@ -80,26 +78,49 @@ def test_publico_filtro_de_hospital_nao_fura_escopo(client, cenario):
     assert fila["total"] == 0
 
 
-def test_publico_priorizacao_e_judicializados_no_escopo(client, cenario):
+def test_publico_ve_priorizacao_e_judicializados_de_todos_sem_iniciais_alheias(client, cenario):
     h = token(client, "alfa@t.local")
     prio = client.get("/priorizacao", headers=h).json()
-    assert _hospitais(prio["top_prioritarios"]) == {H_ALFA}
-    assert sum(prio["distribuicao_swalis"].values()) == 2
+    assert _hospitais(prio["top_prioritarios"]) == {H_ALFA, H_BETA}
+    assert sum(prio["distribuicao_swalis"].values()) == 5
     jud = client.get("/judicializados", headers=h).json()
-    assert jud["total"] == 1 and _hospitais(jud["pacientes"]) == {H_ALFA}
+    assert jud["total"] == 3 and _hospitais(jud["pacientes"]) == {H_ALFA, H_BETA}
+    for lista in (prio["top_prioritarios"], jud["pacientes"]):
+        for p in lista:
+            if p["hospital_nome"] == H_ALFA:
+                assert p["iniciais"] is not None
+            else:
+                assert p["iniciais"] is None
 
 
 def test_publico_com_nome_generico_falha_fechado(client, cenario):
-    """'Hospital Genérico' → 1º termo 'HOSPITAL' casaria com todos: nada é exibido."""
+    """'Hospital Genérico' → 1º termo 'HOSPITAL' casaria com todos: fila vazia e nenhuma inicial."""
     h = token(client, "generico@t.local")
     assert client.get("/fila", headers=h).json()["total"] == 0
-    assert client.get("/judicializados", headers=h).json()["total"] == 0
-    assert client.get("/priorizacao", headers=h).json()["top_prioritarios"] == []
+    jud = client.get("/judicializados", headers=h).json()["pacientes"]
+    prio = client.get("/priorizacao", headers=h).json()["top_prioritarios"]
+    assert all(p["iniciais"] is None for p in jud + prio)
 
 
-# ── Hospital particular (README: fila "tudo") ───────────────
-def test_particular_fila_conforme_readme(client, cenario):
-    assert client.get("/fila", headers=token(client, "part@t.local")).json()["total"] == 5
+# ── Hospital particular: só agregados de outras instituições ─
+def test_particular_sem_linhas_de_outros_hospitais(client, cenario):
+    h = token(client, "part@t.local")
+    fila = client.get("/fila", headers=h).json()
+    assert fila["pacientes"] == []
+    assert fila["stats"]["total_escopo_agregado"] == 5 and fila["stats"]["a1"] == 2
+    prio = client.get("/priorizacao", headers=h).json()
+    assert prio["top_prioritarios"] == [] and sum(prio["distribuicao_swalis"].values()) == 5
+    jud = client.get("/judicializados", headers=h).json()
+    assert jud["pacientes"] == [] and jud["total"] == 3
+
+
+# ── SMS: estado inteiro ─────────────────────────────────────
+def test_sms_ve_estado_inteiro(client, cenario):
+    h = token(client, "sms@t.local")
+    fila = client.get("/fila", headers=h).json()
+    assert fila["total"] == 5
+    assert {p["municipio"] for p in fila["pacientes"]} == {"FORTALEZA", "SOBRAL"}
+    assert all(p["iniciais"] for p in fila["pacientes"])
 
 
 # ── Dashboard (README: "Ceará todo" para todos) ─────────────
@@ -127,16 +148,3 @@ def test_somente_sesa_importa(client, cenario, email):
 
 def test_sem_token_negado(client, cenario):
     assert client.get("/fila").status_code in (401, 403)
-
-
-# ── Regras pendentes de decisão (proposta do arquiteto) ─────
-@pytest.mark.xfail(strict=True, reason="Decisão pendente: SMS limitada ao municipio_gestor? (README não define SMS)")
-def test_proposta_sms_ve_so_municipio_gestor(client, cenario):
-    fila = client.get("/fila", headers=token(client, "sms@t.local")).json()
-    assert {p["municipio"] for p in fila["pacientes"]} == {"SOBRAL"}
-
-
-@pytest.mark.xfail(strict=True, reason="Decisão pendente: particular vê iniciais de pacientes do estado todo? (README diz 'tudo')")
-def test_proposta_particular_sem_iniciais_de_outros_hospitais(client, cenario):
-    fila = client.get("/fila", headers=token(client, "part@t.local")).json()
-    assert all(p["iniciais"] is None for p in fila["pacientes"])

@@ -187,11 +187,17 @@ def dashboard(
 
 
 # ─── ESCOPO DE DADOS POR INSTITUIÇÃO ───────────────────────
-# Regra atual (README, "Quem vê o quê"): hospital_publico vê só a fila do próprio
-# hospital. O vínculo tenant → hospital ainda é feito pelo 1º termo do nome do
-# tenant (ex.: "HGF ..." → hospital_nome ILIKE '%HGF%'). Enquanto não houver
-# vínculo por CNES, falhamos fechado quando a chave é genérica ou ausente.
-# SESA, SMS e hospital_particular: sem filtro (regra pendente de decisão, ver README).
+# Regras decididas pelo proponente em 28/09/2026 (README, "Quem vê o quê"):
+# - SESA e SMS: veem o estado inteiro.
+# - hospital_publico: fila detalhada só do próprio hospital; priorização e
+#   judicializados de todas as instituições, com iniciais ocultas nas linhas
+#   de outros hospitais (LGPD).
+# - hospital_particular: linhas individuais só do próprio hospital; do resto
+#   do estado, apenas dados agregados (contagens).
+# O vínculo tenant → hospital ainda é feito pelo 1º termo do nome do tenant
+# (ex.: "HGF ..." → hospital_nome ILIKE '%HGF%'). Enquanto não houver vínculo
+# por CNES, falhamos fechado quando a chave é genérica ou ausente.
+_ROLES_HOSPITAL = ("hospital_publico", "hospital_particular")
 _CHAVES_GENERICAS = {
     "HOSPITAL", "HOSP", "HOSP.", "INSTITUTO", "CENTRO", "CLINICA", "CLÍNICA",
     "SECRETARIA", "SMS", "SESA", "UNIDADE", "MATERNIDADE", "SANTA", "SAO", "SÃO",
@@ -211,13 +217,29 @@ def _chave_hospital_do_tenant(db: Session, user: Usuario) -> Optional[str]:
 
 
 def _filtrar_pacientes_por_escopo(q, db: Session, user: Usuario):
-    """Aplica o escopo de instituição a uma query de PacienteFila."""
-    if user.role == "hospital_publico":
+    """Restringe uma query de PacienteFila às linhas do próprio hospital (perfis hospitalares)."""
+    if user.role in _ROLES_HOSPITAL:
         chave = _chave_hospital_do_tenant(db, user)
         if chave is None:
             return q.filter(false())  # falha fechado: sem vínculo confiável, nada é exibido
         return q.filter(PacienteFila.hospital_nome.ilike(f"%{chave}%"))
     return q
+
+
+def _escopo_linhas_compartilhadas(q, db: Session, user: Usuario):
+    """Priorização/judicializados: hospital público vê todas as instituições;
+    hospital particular só as próprias linhas (o resto apenas agregado)."""
+    if user.role == "hospital_particular":
+        return _filtrar_pacientes_por_escopo(q, db, user)
+    return q
+
+
+def _mascara_iniciais(db: Session, user: Usuario):
+    """Função que oculta as iniciais de pacientes de outros hospitais (perfis hospitalares)."""
+    if user.role not in _ROLES_HOSPITAL:
+        return lambda p: p.iniciais
+    chave = _chave_hospital_do_tenant(db, user)
+    return lambda p: p.iniciais if chave and chave in (p.hospital_nome or "").upper() else None
 
 
 # ─── FILA CIRÚRGICA ───────────────────────────────────────
@@ -232,9 +254,17 @@ def fila(
     user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # hospital_publico vê só a fila do seu próprio hospital
-    escopo = _filtrar_pacientes_por_escopo(db.query(PacienteFila), db, user)
-    q = escopo
+    # Perfis hospitalares veem linhas só do próprio hospital
+    q = _filtrar_pacientes_por_escopo(db.query(PacienteFila), db, user)
+    # Estatísticas agregadas: hospital público no próprio escopo;
+    # particular, SMS e SESA no estado inteiro (só contagens)
+    if user.role == "hospital_publico":
+        escopo = q
+        agg_esp = _filtrar_pacientes_por_escopo(
+            db.query(PacienteFila.especialidade, func.count(PacienteFila.id)), db, user)
+    else:
+        escopo = db.query(PacienteFila)
+        agg_esp = db.query(PacienteFila.especialidade, func.count(PacienteFila.id))
 
     if especialidade:
         q = q.filter(PacienteFila.especialidade.ilike(f"%{especialidade}%"))
@@ -256,15 +286,14 @@ def fila(
     )
     rows = q.order_by(swalis_order).offset((page - 1) * limit).limit(limit).all()
 
-    # Stats gerais — dentro do escopo da instituição (antes ignoravam o filtro)
     stats = {
         "total": total,
+        "total_escopo_agregado": escopo.count(),
         "a1": escopo.filter(PacienteFila.classif_swalis == "Categoria A1").count(),
         "judicializados": escopo.filter(PacienteFila.judicializado == True).count(),
         "especialidades": [
             {"nome": e, "total": n}
-            for e, n in _filtrar_pacientes_por_escopo(
-                db.query(PacienteFila.especialidade, func.count(PacienteFila.id)), db, user)
+            for e, n in agg_esp
             .group_by(PacienteFila.especialidade)
             .order_by(func.count(PacienteFila.id).desc()).limit(10).all()
         ],
@@ -511,18 +540,20 @@ def priorizacao(
          "Categoria C": 3, "Categoria D": 4},
         value=PacienteFila.classif_swalis, else_=5
     )
-    top = _filtrar_pacientes_por_escopo(db.query(PacienteFila), db, user) \
+    iniciais = _mascara_iniciais(db, user)
+    top = _escopo_linhas_compartilhadas(db.query(PacienteFila), db, user) \
         .order_by(swalis_order).limit(20).all()
 
-    dist = _filtrar_pacientes_por_escopo(db.query(
+    # Distribuição SWALIS é agregada: estado inteiro para todos os perfis
+    dist = db.query(
         PacienteFila.classif_swalis,
         func.count(PacienteFila.id).label("n")
-    ), db, user).group_by(PacienteFila.classif_swalis).all()
+    ).group_by(PacienteFila.classif_swalis).all()
 
     return {
         "top_prioritarios": [
             {
-                "id": p.id, "iniciais": p.iniciais,
+                "id": p.id, "iniciais": iniciais(p),
                 "hospital_nome": p.hospital_nome,
                 "especialidade": p.especialidade,
                 "classif_swalis": p.classif_swalis,
@@ -546,16 +577,18 @@ def judicializados(
     user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    base = _filtrar_pacientes_por_escopo(db.query(PacienteFila), db, user).filter(
+    iniciais = _mascara_iniciais(db, user)
+    # Total é agregado (estado inteiro); linhas conforme o perfil
+    total = db.query(PacienteFila).filter(PacienteFila.judicializado == True).count()
+    rows = _escopo_linhas_compartilhadas(db.query(PacienteFila), db, user).filter(
         PacienteFila.judicializado == True
-    )
-    rows = base.limit(100).all()
+    ).limit(100).all()
 
     return {
-        "total": base.count(),
+        "total": total,
         "pacientes": [
             {
-                "id": p.id, "iniciais": p.iniciais,
+                "id": p.id, "iniciais": iniciais(p),
                 "municipio": p.municipio, "hospital_nome": p.hospital_nome,
                 "especialidade": p.especialidade, "classif_swalis": p.classif_swalis,
                 "procedimento": p.procedimento,

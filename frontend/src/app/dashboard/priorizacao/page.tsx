@@ -65,9 +65,16 @@ export default function PriorizacaoPage() {
               </tr>
             </thead>
             <tbody>
+              {(data?.top_prioritarios || []).length === 0 && (
+                <tr>
+                  <td colSpan={8} className="text-center text-sm text-slate-500 py-6">
+                    Nenhum paciente da sua instituição nesta lista. Dados de outras instituições aparecem apenas de forma agregada.
+                  </td>
+                </tr>
+              )}
               {(data?.top_prioritarios || []).map((p: {
                 id: number
-                iniciais: string
+                iniciais: string | null
                 hospital_nome: string
                 especialidade: string
                 classif_swalis: string
