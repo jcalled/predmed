@@ -66,7 +66,7 @@ export const redistApi = {
 
 // ── Priorização ──────────────────────────────────────────
 export const priorizacaoApi = {
-  get: (params?: { limit?: number; especialidade?: string; apenas_oncologia?: boolean }) =>
+  get: (params?: { limit?: number; especialidade?: string; apenas_oncologia?: boolean; apenas_judicializados?: boolean }) =>
     api.get('/priorizacao', { params }).then(r => r.data),
 }
 
@@ -80,6 +80,11 @@ export const configApi = {
   getVagas: () => api.get('/configuracoes/vagas').then(r => r.data),
   updateVaga: (data: { especialidade: string; vagas_mes: number; ativo: boolean }) =>
     api.put('/configuracoes/vagas', data).then(r => r.data),
+}
+
+// ── Status da coleta (SESA e SMS) ────────────────────────
+export const coletaApi = {
+  status: (n = 10) => api.get('/coleta/status', { params: { n } }).then(r => r.data),
 }
 
 // ── Relatórios ──────────────────────────────────────────

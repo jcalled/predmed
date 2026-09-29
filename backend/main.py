@@ -90,6 +90,7 @@ async def lifespan(app: FastAPI):
 # ─── App ──────────────────────────────────────────────────
 # app = FastAPI(title="PREDMED API", version="1.0.0", lifespan=lifespan)
 app = FastAPI(title="PREDMED API", version="1.0.0") # Sem retreino
+from routers import coleta as _router_coleta; app.include_router(_router_coleta.router)  # noqa: E402,E702
 
 app.add_middleware(
     CORSMiddleware,
@@ -576,16 +577,24 @@ def upload_datasus(
 
 
 # ─── PRIORIZACAO ──────────────────────────────────────────
+LIMITE_JUDICIALIZADOS = 1000  # teto de linhas com o filtro de judicializados
+
+
 @app.get("/priorizacao")
 def priorizacao(
     limit: int = 50,
     especialidade: Optional[str] = None,
     apenas_oncologia: bool = False,
+    apenas_judicializados: bool = False,
     user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Fila ordenada pelo score explicável (services/priorizacao.py, regras v0.1)."""
-    limit = max(1, min(limit, 200))
+    """Fila ordenada pelo score explicável (services/priorizacao.py, regras v0.1).
+
+    `apenas_judicializados` filtra na query (antes do score), mantendo o escopo do
+    perfil; o teto de linhas sobe para LIMITE_JUDICIALIZADOS para vir completo."""
+    teto = LIMITE_JUDICIALIZADOS if apenas_judicializados else 200
+    limit = max(1, min(limit, teto))
     hoje = _data_referencia()
     iniciais = _mascara_iniciais(db, user)
 
@@ -597,6 +606,8 @@ def priorizacao(
     )
     if especialidade:
         q = q.filter(PacienteFila.especialidade.ilike(f"%{especialidade}%"))
+    if apenas_judicializados:
+        q = q.filter(PacienteFila.judicializado == True)  # noqa: E712
 
     avaliados = []
     for p in q.all():

@@ -36,7 +36,9 @@ type Paciente = {
 }
 
 const LIMITE_PADRAO = 50
-const LIMITE_MAXIMO = 200 // teto aceito por GET /priorizacao
+// Com "Somente judicializados" o backend filtra na query e aceita até 1000 linhas,
+// então a lista vem completa no escopo do perfil.
+const LIMITE_JUDICIALIZADOS = 1000
 
 function faixaScore(score: number) {
   if (score >= 70) return { cor: 'var(--red)', rotulo: 'alta' }
@@ -54,17 +56,20 @@ export default function PriorizacaoPage() {
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get('judicializados') === '1') setJudicial(true)
   }, [])
-  // "Somente judicializados" é filtrado no cliente sobre o campo `judicializado`
-  // já retornado por /priorizacao (o backend não muda). Com o filtro ligado,
-  // pedimos o máximo que a API aceita (200) para cobrir mais casos.
-  const limite = judicial ? LIMITE_MAXIMO : LIMITE_PADRAO
+  // "Somente judicializados" é filtrado no servidor (apenas_judicializados),
+  // antes do score, respeitando o escopo do perfil.
+  const limite = judicial ? LIMITE_JUDICIALIZADOS : LIMITE_PADRAO
   const { data, error, isValidating, mutate } = useSWR(
-    ['priorizacao', esp, onco, limite],
-    () => priorizacaoApi.get({ limit: limite, especialidade: esp || undefined, apenas_oncologia: onco || undefined }),
+    ['priorizacao', esp, onco, judicial],
+    () => priorizacaoApi.get({
+      limit: limite,
+      especialidade: esp || undefined,
+      apenas_oncologia: onco || undefined,
+      apenas_judicializados: judicial || undefined,
+    }),
     { keepPreviousData: true },
   )
-  // Total de judicializados (agregado do estado) e linhas no escopo do perfil,
-  // para avisar quando algum caso ficou fora dos 200 de maior score.
+  // Total de judicializados (agregado do estado) para o KPI.
   const { data: jud } = useSWR('judicializados', judicializadosApi.get)
 
   const semDados = data === undefined
@@ -72,13 +77,11 @@ export default function PriorizacaoPage() {
   const dist: Record<string, number> = data?.distribuicao_swalis || {}
   const total = Object.values(dist).reduce((a, b) => a + b, 0)
   const avaliados: Paciente[] = data?.top_prioritarios || []
-  const lista = judicial ? avaliados.filter(p => p.judicializado) : avaliados
+  const lista = avaliados
   const temFiltro = Boolean(esp || onco || judicial)
   const limparFiltros = () => { setEsp(''); setOnco(false); setJudicial(false) }
-  // Linhas de judicializados que o perfil pode ver: o estado inteiro, exceto o
-  // hospital particular (só as próprias linhas; /judicializados limita a 100).
-  const judNoEscopo: number | undefined = isParticular ? jud?.pacientes?.length : jud?.total
-  const possivelmenteIncompleto = judicial && !esp && !onco && judNoEscopo != null && lista.length < judNoEscopo
+  // Só acontece se houver mais judicializados que o teto de linhas da API.
+  const truncado = judicial && data?.total_avaliados != null && lista.length < data.total_avaliados
 
   return (
     <div className="animate-fadein">
@@ -170,11 +173,11 @@ export default function PriorizacaoPage() {
           <Scale size={16} aria-hidden="true" className="flex-shrink-0 mt-0.5" style={{ color: 'var(--red)' }} />
           <div>
             Casos com ordem judicial recebem pontos extras no score, mas <strong style={{ color: 'var(--text)' }}>não furam a fila automaticamente</strong>:
-            o prazo de cada ordem deve ser conferido no processo. O filtro busca entre os {LIMITE_MAXIMO} pacientes de maior score.
-            {possivelmenteIncompleto && (
+            o prazo de cada ordem deve ser conferido no processo.
+            {isParticular && ' Para o seu perfil, a lista mostra apenas os casos da sua instituição.'}
+            {truncado && (
               <div className="mt-1" style={{ color: 'var(--yellow)' }}>
-                Há {judNoEscopo!.toLocaleString('pt-BR')} casos judicializados visíveis para o seu perfil e {lista.length.toLocaleString('pt-BR')} estão entre os {LIMITE_MAXIMO} primeiros.
-                Os demais têm score menor; refine por especialidade para encontrá-los.
+                Exibindo {lista.length.toLocaleString('pt-BR')} de {data!.total_avaliados.toLocaleString('pt-BR')} casos; refine por especialidade para ver os demais.
               </div>
             )}
           </div>
@@ -185,7 +188,9 @@ export default function PriorizacaoPage() {
       <div className="card" aria-busy={isValidating}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-4">
           <h2 className="text-base font-semibold">
-            {judicial ? `Judicializados entre os ${LIMITE_MAXIMO} de maior score` : `Top ${LIMITE_PADRAO} por score`}
+            {judicial
+              ? `Judicializados por score (${(data?.total_avaliados ?? lista.length).toLocaleString('pt-BR')})`
+              : `Top ${LIMITE_PADRAO} por score`}
           </h2>
           <span className="text-xs" style={{ color: 'var(--text2)' }}>Empate: quem espera há mais tempo vem primeiro</span>
         </div>

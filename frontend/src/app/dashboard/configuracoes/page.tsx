@@ -1,8 +1,8 @@
 'use client'
 import { useState } from 'react'
 import useSWR from 'swr'
-import { Upload, Hospital, Database, Info, CheckCircle2, Clock, Lightbulb } from 'lucide-react'
-import { configApi, adminApi } from '@/lib/api'
+import { Upload, Hospital, Database, Info, CheckCircle2, Clock, Lightbulb, AlertTriangle } from 'lucide-react'
+import { configApi, adminApi, coletaApi } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
 import Abas, { type Aba } from '@/components/ui/Abas'
 import Badge from '@/components/ui/Badge'
@@ -11,7 +11,7 @@ import { Carregando, EstadoErro, EstadoVazio, TabelaRolavel } from '@/components
 /*
  * Configurações — docs/ux/arquitetura-telas.md, item 8. Abas por perfil:
  * - SESA: Importação de dados + Status da coleta
- * - SMS: Status da coleta
+ * - SMS: Status da coleta (GET /coleta/status, require_gestor)
  * - Hospital particular: Vagas SUS
  * - Hospital público: não tem a tela (fora do menu; acesso direto mostra "sem permissão").
  * Os endpoints continuam protegidos no backend (import: require_sesa; PUT vagas: particular).
@@ -233,14 +233,180 @@ const PARAMETROS = [
   { rotulo: 'Raio de redistribuição', valor: 'mesma CIR (distância ainda não calculada)' },
 ]
 
+interface ColetaFila {
+  coletado_em: string
+  total: number | null
+  entradas: number | null
+  saidas: number | null
+  data_max: string | null
+  judicializados: number | null
+  estabelecimentos: number | null
+}
+
+interface RegistroDatasus {
+  registrado_em: string
+  fonte: string | null
+  competencia: string | null
+  acao: string | null
+  registros: number | null
+}
+
+interface StatusColeta {
+  verificado_em: string
+  fila: {
+    limite_atraso_horas: number
+    atrasada: boolean
+    horas_desde_ultima: number | null
+    total_coletas: number
+    ultima: ColetaFila | null
+    ultimas: ColetaFila[]
+  }
+  datasus: {
+    total_registros: number
+    ultimo_registro_em: string | null
+    por_fonte: RegistroDatasus[]
+  }
+}
+
+const fmtDataHora = (iso: string) =>
+  new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+const fmtData = (iso: string | null) => (iso ? new Date(`${iso.slice(0, 10)}T12:00:00`).toLocaleDateString('pt-BR') : '—')
+const fmtNum = (n: number | null | undefined) => (n == null ? '—' : n.toLocaleString('pt-BR'))
+const fmtHoras = (h: number) => (h < 1 ? 'menos de 1 hora' : `${h.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} h`)
+
+function SituacaoColeta() {
+  const { data, error, isLoading, mutate } = useSWR<StatusColeta>('coleta-status', () => coletaApi.status(10), { refreshInterval: 5 * 60_000 })
+
+  if (error && !data) return <div className="card"><EstadoErro erro={error} aoTentarNovamente={() => mutate()} /></div>
+  if (isLoading || !data) return <div className="card"><Carregando mensagem="Lendo o registro das coletas..." variante="linhas" linhas={3} /></div>
+
+  const { fila, datasus } = data
+  const ultima = fila.ultima
+  const corAtraso = fila.atrasada ? 'var(--red)' : 'var(--accent2)'
+
+  return (
+    <>
+      <section className="card" aria-labelledby="titulo-ultima" style={{ borderColor: fila.atrasada ? 'rgba(255,107,107,0.55)' : undefined }}>
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
+          <h2 id="titulo-ultima" className="text-base font-semibold flex items-center gap-2">
+            <Database size={16} aria-hidden="true" /> Fila cirúrgica (IntegraSUS) — última coleta
+          </h2>
+          {fila.atrasada ? <Badge tom="vermelho" icone={<AlertTriangle size={11} />}>atrasada</Badge> : <Badge tom="verde">em dia</Badge>}
+        </div>
+
+        <div role={fila.atrasada ? 'alert' : 'status'} className="text-sm mb-4 flex gap-2 items-start" style={{ color: corAtraso }}>
+          {fila.atrasada ? <AlertTriangle size={16} aria-hidden="true" className="flex-shrink-0 mt-0.5" /> : <CheckCircle2 size={16} aria-hidden="true" className="flex-shrink-0 mt-0.5" />}
+          <span>
+            {!ultima
+              ? 'Nenhuma coleta registrada. Verifique se a coleta automática está instalada.'
+              : fila.atrasada
+                ? `Sem coleta da fila há ${fmtHoras(fila.horas_desde_ultima ?? 0)} (limite: ${fila.limite_atraso_horas} h). Os dados exibidos podem estar desatualizados.`
+                : `Última coleta há ${fmtHoras(fila.horas_desde_ultima ?? 0)}.`}
+          </span>
+        </div>
+
+        {ultima && (
+          <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            {[
+              { rotulo: 'Data e hora', valor: fmtDataHora(ultima.coletado_em) },
+              { rotulo: 'Pacientes na fila', valor: fmtNum(ultima.total) },
+              { rotulo: 'Entradas', valor: fmtNum(ultima.entradas) },
+              { rotulo: 'Saídas', valor: fmtNum(ultima.saidas) },
+              { rotulo: 'Inserção mais recente', valor: fmtData(ultima.data_max) },
+            ].map(i => (
+              <div key={i.rotulo} className="kpi-card">
+                <dt className="text-xs" style={{ color: 'var(--text2)' }}>{i.rotulo}</dt>
+                <dd className="font-mono text-sm font-bold mt-1">{i.valor}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+        <p className="text-xs mt-3" style={{ color: 'var(--text2)' }}>
+          Entradas e saídas comparam com a coleta anterior (— quando não há anterior). Verificado em {fmtDataHora(data.verificado_em)}.
+        </p>
+      </section>
+
+      {fila.ultimas.length > 0 && (
+        <section className="card" aria-labelledby="titulo-historico">
+          <h2 id="titulo-historico" className="text-base font-semibold mb-3">
+            Últimas coletas da fila <span className="text-xs font-normal" style={{ color: 'var(--text2)' }}>({fila.ultimas.length} de {fmtNum(fila.total_coletas)})</span>
+          </h2>
+          <TabelaRolavel rotulo="Últimas coletas da fila cirúrgica">
+            <table className="table-predmed">
+              <caption className="sr-only">Últimas coletas da fila cirúrgica, da mais recente para a mais antiga</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Data e hora</th>
+                  <th scope="col" className="text-right">Total</th>
+                  <th scope="col" className="text-right">Entradas</th>
+                  <th scope="col" className="text-right">Saídas</th>
+                  <th scope="col" className="text-right">Judicializados</th>
+                  <th scope="col">Inserção mais recente</th>
+                </tr>
+              </thead>
+              <tbody>
+                {fila.ultimas.map(c => (
+                  <tr key={c.coletado_em}>
+                    <td className="text-xs whitespace-nowrap">{fmtDataHora(c.coletado_em)}</td>
+                    <td className="text-right font-mono text-xs">{fmtNum(c.total)}</td>
+                    <td className="text-right font-mono text-xs">{fmtNum(c.entradas)}</td>
+                    <td className="text-right font-mono text-xs">{fmtNum(c.saidas)}</td>
+                    <td className="text-right font-mono text-xs">{fmtNum(c.judicializados)}</td>
+                    <td className="text-xs">{fmtData(c.data_max)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TabelaRolavel>
+        </section>
+      )}
+
+      <section className="card" aria-labelledby="titulo-datasus">
+        <h2 id="titulo-datasus" className="text-base font-semibold mb-3">DATASUS (SIH/SUS e CNES) — último arquivo por fonte</h2>
+        {datasus.por_fonte.length === 0 ? (
+          <EstadoVazio titulo="Nenhum arquivo do DATASUS registrado" descricao="A coleta roda nos dias 10 e 25 de cada mês." />
+        ) : (
+          <TabelaRolavel rotulo="Último arquivo do DATASUS por fonte">
+            <table className="table-predmed">
+              <caption className="sr-only">Último registro de coleta do DATASUS por fonte</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Fonte</th>
+                  <th scope="col">Competência</th>
+                  <th scope="col">Registrado em</th>
+                  <th scope="col" className="text-right">Registros</th>
+                  <th scope="col">Ação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {datasus.por_fonte.map(r => (
+                  <tr key={r.fonte ?? r.registrado_em}>
+                    <td className="text-xs font-medium">{r.fonte ?? '—'}</td>
+                    <td className="text-xs font-mono">{r.competencia ?? '—'}</td>
+                    <td className="text-xs whitespace-nowrap">{fmtDataHora(r.registrado_em)}</td>
+                    <td className="text-right font-mono text-xs">{fmtNum(r.registros)}</td>
+                    <td className="text-xs">{r.acao === 'baixado' ? 'baixado' : r.acao === 'validado_existente' ? 'já existente (validado)' : (r.acao ?? '—')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TabelaRolavel>
+        )}
+      </section>
+    </>
+  )
+}
+
 function AbaStatusColeta() {
   return (
     <div className="max-w-4xl space-y-5">
+      <SituacaoColeta />
+
       <div className="card text-xs flex gap-3 items-start" style={{ color: 'var(--text2)' }} role="note">
         <Info size={16} aria-hidden="true" className="flex-shrink-0 mt-0.5" style={{ color: 'var(--accent)' }} />
         <div>
-          Esta é a <strong style={{ color: 'var(--text)' }}>programação</strong> das coletas. O horário e o resultado da última execução
-          ainda não são expostos pela API; quando forem, aparecerão aqui.
+          Situação lida do registro (manifesto) de cada coleta: só números agregados, sem dados de pacientes.
+          A coleta da fila é considerada <strong style={{ color: 'var(--text)' }}>atrasada</strong> após 14 horas sem execução.
         </div>
       </div>
 
