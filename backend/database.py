@@ -73,6 +73,9 @@ class PacienteFila(Base):
     data_atualizacao = Column(String)  # data do CSV importado
     posicao_fila     = Column(Integer, nullable=True)  # posição informada pela fonte
     solicitacao_hash = Column(String(64), nullable=True, index=True)  # nº de solicitação pseudonimizado (HMAC)
+    # False quando o pedido vem das numerações legadas (3 a 6 dígitos), cujas datas
+    # não seguem a ordem do nº de solicitação; ver docs/dados/coleta-integrasus.md
+    data_confiavel   = Column(Boolean, nullable=True)
     
     hospital_id = Column(Integer, ForeignKey("hospitais.id"), nullable=True, index=True)
     hospital = relationship("Hospital", back_populates="pacientes")
@@ -354,6 +357,7 @@ _COLUNAS_NOVAS = {
     "pacientes_fila": {
         "posicao_fila": "INTEGER",
         "solicitacao_hash": "VARCHAR(64)",
+        "data_confiavel": "BOOLEAN",
     },
 }
 

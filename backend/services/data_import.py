@@ -627,6 +627,19 @@ def _data_iso(valor: str):
     return None
 
 
+# Numerações de solicitação atuais do sistema de regulação (7 e 11 dígitos): datas
+# 100% coerentes com a ordem do número. Numerações legadas (3–6 dígitos) têm datas
+# de 2006 a 2022 fora de ordem — tratadas como "data a confirmar".
+_DIGITOS_NUMERACAO_ATUAL = {7, 11}
+
+
+def _data_confiavel(cod_solicitacao):
+    texto = str(cod_solicitacao or "").strip()
+    if not texto.isdigit():
+        return None
+    return len(texto) in _DIGITOS_NUMERACAO_ATUAL
+
+
 def _inteiro(valor):
     try:
         return int(str(valor).strip())
@@ -685,6 +698,7 @@ def _ler_coleta_integrasus(path: str) -> list:
             "data_insercao": _data_iso(r.get("data")),
             "posicao_fila": _inteiro(r.get("posicao")),
             "solicitacao_hash": pseudonimizar(r.get("codSolicitacao")),
+            "data_confiavel": _data_confiavel(r.get("codSolicitacao")),
         })
     if not registros:
         raise ImportacaoInvalida("Nenhum registro válido na coleta; fila atual mantida")
@@ -755,6 +769,7 @@ def _ler_e_validar_integrasus(csv_path: str) -> list:
             "data_insercao": _data_iso(_valor_texto(row, cols["data"])),
             "posicao_fila": _inteiro(_valor_texto(row, cols["posicao"])),
             "solicitacao_hash": pseudonimizar(_valor_texto(row, cols["solicitacao"])),
+            "data_confiavel": _data_confiavel(_valor_texto(row, cols["solicitacao"])),
         })
 
     if not registros:

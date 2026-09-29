@@ -57,7 +57,9 @@ export default function FilaPage() {
         <KPICard
           label="Espera mediana"
           value={stats?.espera_mediana_dias != null ? `${stats.espera_mediana_dias} dias` : '—'}
-          detail="Metade da fila espera mais que isso"
+          detail={stats?.datas_a_confirmar
+            ? `Sem ${stats.datas_a_confirmar.toLocaleString('pt-BR')} registros com data a confirmar`
+            : 'Metade da fila espera mais que isso'}
           color="blue"
         />
       </div>
@@ -136,6 +138,7 @@ export default function FilaPage() {
                 procedimento: string
                 data_insercao: string | null
                 dias_espera: number | null
+                data_confiavel: boolean | null
               }, i: number) => (
                 <tr key={p.id}>
                   <td className="font-mono text-xs" style={{ color: 'var(--text2)' }}>{(page - 1) * 50 + i + 1}</td>
@@ -159,8 +162,16 @@ export default function FilaPage() {
                       : <span className="text-xs" style={{ color: 'var(--text2)' }}>—</span>
                     }
                   </td>
-                  <td className="text-right text-xs font-mono" title={p.data_insercao ? `Solicitação em ${p.data_insercao.split('-').reverse().join('/')}` : 'Sem data'}>
+                  <td
+                    className="text-right text-xs font-mono"
+                    title={p.data_confiavel === false
+                      ? 'Numeração antiga do sistema de regulação: data de solicitação a confirmar com a SESA'
+                      : p.data_insercao ? `Solicitação em ${p.data_insercao.split('-').reverse().join('/')}` : 'Sem data'}
+                  >
                     {p.dias_espera != null ? `${p.dias_espera.toLocaleString('pt-BR')} d` : '—'}
+                    {p.data_confiavel === false && (
+                      <div><span className="badge badge-gray" style={{ fontSize: 9 }}>a confirmar</span></div>
+                    )}
                   </td>
                 </tr>
               ))}

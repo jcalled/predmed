@@ -39,3 +39,14 @@ def test_coleta_json_preenche_data_posicao_e_pseudonimiza(db, tmp_path, monkeypa
         assert p.solicitacao_hash and len(p.solicitacao_hash) == 64
         assert "900000" not in p.solicitacao_hash
     assert pacientes[0].solicitacao_hash != pacientes[1].solicitacao_hash
+    # numeração atual (7 dígitos) → data confiável
+    assert all(p.data_confiavel is True for p in pacientes)
+
+
+def test_numeracao_legada_marca_data_a_confirmar(db, tmp_path, monkeypatch):
+    monkeypatch.setenv("PREDMED_PSEUDO_KEY", "chave-de-teste")
+    arq = tmp_path / "fila_20260928T070000.json"
+    arq.write_text(json.dumps([_registro(1, codSolicitacao=12345, data="2008-05-02T00:00:00.000+0000")]))
+    import_integrasus(str(arq), db)
+    p = db.query(PacienteFila).one()
+    assert p.data_confiavel is False and p.data_insercao == "2008-05-02"

@@ -302,13 +302,16 @@ def fila(
     rows = q.order_by(swalis_order, PacienteFila.data_insercao.asc()) \
         .offset((page - 1) * limit).limit(limit).all()
 
+    # Mediana só com datas confiáveis (numerações atuais)
     datas = sorted(d for (d,) in escopo.with_entities(PacienteFila.data_insercao)
-                   .filter(PacienteFila.data_insercao.isnot(None)).all())
+                   .filter(PacienteFila.data_insercao.isnot(None),
+                           PacienteFila.data_confiavel.isnot(False)).all())
     stats = {
         "total": total,
         "total_escopo_agregado": escopo.count(),
         # Espera medida desde a data da solicitação informada pelo IntegraSUS
         "espera_mediana_dias": _dias_espera(datas[len(datas) // 2]) if datas else None,
+        "datas_a_confirmar": escopo.filter(PacienteFila.data_confiavel.is_(False)).count(),
         "data_referencia": _data_referencia(),
         "a1": escopo.filter(PacienteFila.classif_swalis == "Categoria A1").count(),
         "judicializados": escopo.filter(PacienteFila.judicializado == True).count(),
@@ -337,6 +340,7 @@ def fila(
                 "procedimento": r.procedimento,
                 "data_insercao": r.data_insercao,
                 "dias_espera": _dias_espera(r.data_insercao),
+                "data_confiavel": r.data_confiavel,
             }
             for r in rows
         ]
