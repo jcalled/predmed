@@ -40,6 +40,7 @@ from services.ia_engine import (
     pressao_status, VALOR_AIH_SIMULADO
 )
 from services.data_import import import_integrasus, import_datasus, ImportacaoInvalida
+from services.priorizacao import VERSAO_REGRAS, calcular_score, dias_desde, eh_oncologico
 
 from services.previsoes import (
     get_previsoes, get_previsoes_todas_especialidades,
@@ -557,18 +558,38 @@ def upload_datasus(
 # ─── PRIORIZACAO ──────────────────────────────────────────
 @app.get("/priorizacao")
 def priorizacao(
+    limit: int = 50,
+    especialidade: Optional[str] = None,
+    apenas_oncologia: bool = False,
     user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    from sqlalchemy import case
-    swalis_order = case(
-        {"Categoria A1": 0, "Categoria A2": 1, "Categoria B": 2,
-         "Categoria C": 3, "Categoria D": 4},
-        value=PacienteFila.classif_swalis, else_=5
-    )
+    """Fila ordenada pelo score explicável (services/priorizacao.py, regras v0.1)."""
+    limit = max(1, min(limit, 200))
+    hoje = _data_referencia()
     iniciais = _mascara_iniciais(db, user)
-    top = _escopo_linhas_compartilhadas(db.query(PacienteFila), db, user) \
-        .order_by(swalis_order).limit(20).all()
+
+    q = _escopo_linhas_compartilhadas(db.query(PacienteFila), db, user).with_entities(
+        PacienteFila.id, PacienteFila.iniciais, PacienteFila.hospital_nome,
+        PacienteFila.municipio, PacienteFila.especialidade, PacienteFila.classif_swalis,
+        PacienteFila.judicializado, PacienteFila.procedimento,
+        PacienteFila.data_insercao, PacienteFila.data_confiavel,
+    )
+    if especialidade:
+        q = q.filter(PacienteFila.especialidade.ilike(f"%{especialidade}%"))
+
+    avaliados = []
+    for p in q.all():
+        if apenas_oncologia and not eh_oncologico(p.especialidade, p.procedimento):
+            continue
+        r = calcular_score(
+            classif_swalis=p.classif_swalis, data_insercao=p.data_insercao,
+            data_confiavel=p.data_confiavel, judicializado=bool(p.judicializado),
+            especialidade=p.especialidade, procedimento=p.procedimento, hoje=hoje,
+        )
+        avaliados.append((r.score, dias_desde(p.data_insercao, hoje) or 0, p, r))
+    # Desempate: maior espera primeiro
+    avaliados.sort(key=lambda t: (t[0], t[1]), reverse=True)
 
     # Distribuição SWALIS é agregada: estado inteiro para todos os perfis
     dist = db.query(
@@ -577,21 +598,31 @@ def priorizacao(
     ).group_by(PacienteFila.classif_swalis).all()
 
     return {
+        "versao_regras": VERSAO_REGRAS,
+        "data_referencia": hoje,
+        "total_avaliados": len(avaliados),
+        "resumo": {
+            "score_70_ou_mais": sum(1 for t in avaliados if t[0] >= 70),
+            "oncologia_acima_60_dias": sum(
+                1 for t in avaliados if any("Oncologia com mais" in a for a in t[3].alertas)),
+            "datas_a_confirmar": sum(1 for t in avaliados if t[2].data_confiavel is False),
+        },
         "top_prioritarios": [
             {
                 "id": p.id, "iniciais": iniciais(p),
                 "hospital_nome": p.hospital_nome,
+                "municipio": p.municipio,
                 "especialidade": p.especialidade,
                 "classif_swalis": p.classif_swalis,
                 "judicializado": p.judicializado,
                 "procedimento": p.procedimento,
-                "score_ia": 100 - ["Categoria A1", "Categoria A2", "Categoria B",
-                                    "Categoria C", "Categoria D"].index(
-                                        p.classif_swalis) * 20 if p.classif_swalis in [
-                                        "Categoria A1", "Categoria A2", "Categoria B",
-                                        "Categoria C", "Categoria D"] else 0,
+                "dias_espera": dias,
+                "data_confiavel": p.data_confiavel,
+                "score": score,
+                "componentes": r.componentes,
+                "alertas": r.alertas,
             }
-            for p in top
+            for score, dias, p, r in avaliados[:limit]
         ],
         "distribuicao_swalis": {row[0]: row[1] for row in dist},
     }

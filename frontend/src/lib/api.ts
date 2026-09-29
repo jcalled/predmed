@@ -66,7 +66,8 @@ export const redistApi = {
 
 // ── Priorização ──────────────────────────────────────────
 export const priorizacaoApi = {
-  get: () => api.get('/priorizacao').then(r => r.data),
+  get: (params?: { limit?: number; especialidade?: string; apenas_oncologia?: boolean }) =>
+    api.get('/priorizacao', { params }).then(r => r.data),
 }
 
 // ── Judicializados ──────────────────────────────────────
