@@ -1,4 +1,6 @@
 /** @type {import('tailwindcss').Config} */
+// As cores apontam para as variáveis CSS de src/app/globals.css (fonte única
+// dos tokens). Assim, trocar um valor lá muda Tailwind e estilos inline juntos.
 module.exports = {
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
@@ -8,22 +10,34 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // PREDMED dark theme — idêntico ao protótipo HTML
-        bg:       '#0A1628',
-        surface:  '#0F1E35',
-        surface2: '#152238',
-        border:   'rgba(255,255,255,0.08)',
-        accent:   '#00C2FF',
-        accent2:  '#00FF9D',
-        accent3:  '#FF6B35',
-        red:      '#FF4444',
-        yellow:   '#FFD700',
-        text1:    '#E8EEF7',
-        text2:    '#7A9CC4',
+        bg:       'var(--bg)',
+        surface:  'var(--surface)',
+        surface2: 'var(--surface2)',
+        surface3: 'var(--surface3)',
+        border:   'var(--border)',
+        'border-strong': 'var(--border-strong)',
+        accent:   '#00C2FF', // hex (= --accent) para aceitar modificadores de opacidade (ex.: border-accent/25)
+        accent2:  'var(--accent2)',
+        accent3:  'var(--accent3)',
+        red:      'var(--red)',
+        yellow:   'var(--yellow)',
+        text1:    'var(--text)',
+        text2:    'var(--text2)',
+        focus:    'var(--focus)',
       },
       fontFamily: {
-        sans: ['DM Sans', 'system-ui', 'sans-serif'],
-        mono: ['DM Mono', 'monospace'],
+        sans: ['DM Sans', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
+        mono: ['DM Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+      },
+      fontSize: {
+        '2xs': ['0.6875rem', { lineHeight: '1rem' }],
+      },
+      width: {
+        sidebar: 'var(--sidebar-w)',
+      },
+      spacing: {
+        sidebar: 'var(--sidebar-w)',
+        topbar: 'var(--topbar-h)',
       },
       animation: {
         'fade-in': 'fadeIn 0.3s ease-in-out',
