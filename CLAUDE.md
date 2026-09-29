@@ -1,7 +1,8 @@
 # PREDMED — contexto do projeto
 
 Plataforma SaaS de IA para **previsão, priorização e redistribuição de filas cirúrgicas do SUS** (Ceará).
-Financiamento: **Edital FUNCAP/FINEP nº 08/2025 — Programa Centelha 3 CE**. Executora: JOSE MARCAL DOMINGOS JUNIOR LTDA.
+Financiamento: **Edital FUNCAP/FINEP nº 08/2025 — Programa Centelha 3 CE**.
+Empresa: **MedOps** (nome adotado em 28/09/2026; o plano de trabalho registra a executora como JOSE MARCAL DOMINGOS JUNIOR LTDA). **PREDMED é o nome do produto/projeto**; MedOps é a marca da empresa (não usar "eKLICK").
 Vigência do plano: **set/2026 → set/2027 (12 meses)**. Clientes-alvo: SESA-CE, secretarias municipais e hospitais públicos/privados.
 É software para **governo e saúde**: dados de pacientes, LGPD, acessibilidade e auditoria são requisitos, não "nice to have".
 

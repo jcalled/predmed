@@ -9,7 +9,7 @@ NC='\033[0m'
 
 echo ""
 echo -e "${BLUE}══════════════════════════════════════════════${NC}"
-echo -e "${BLUE}  🧠  PREDMED MVP — eKLICK Healthcare AI      ${NC}"
+echo -e "${BLUE}  🧠  PREDMED MVP — MedOps                    ${NC}"
 echo -e "${BLUE}══════════════════════════════════════════════${NC}"
 echo ""
 

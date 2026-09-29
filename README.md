@@ -1,4 +1,4 @@
-# 🧠 PREDMED MVP — eKLICK Healthcare AI
+# 🧠 PREDMED MVP — MedOps
 
 **Plataforma de IA para Previsão, Priorização e Redistribuição de Filas Cirúrgicas do SUS**
 
@@ -176,5 +176,5 @@ GET   /health                  → Status do sistema
 
 ---
 
-**eKLICK Healthcare AI** | contato@ekclick.com.br
+**MedOps** — empresa responsável pelo PREDMED
 # predmed

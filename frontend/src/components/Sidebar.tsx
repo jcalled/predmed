@@ -57,7 +57,7 @@ export default function Sidebar() {
           </div>
           <div>
             <div className="text-base font-bold tracking-tight">PREDMED</div>
-            <div className="text-xs" style={{ color: 'var(--text2)' }}>eKLICK Healthcare AI</div>
+            <div className="text-xs" style={{ color: 'var(--text2)' }}>MedOps</div>
           </div>
         </div>
       </div>

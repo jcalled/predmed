@@ -56,7 +56,7 @@ export default function LoginPage() {
             </div>
             <div className="text-left">
               <div className="text-2xl font-bold tracking-tight text-text1">PREDMED</div>
-              <div className="text-xs" style={{ color: 'var(--text2)' }}>eKLICK Healthcare AI</div>
+              <div className="text-xs" style={{ color: 'var(--text2)' }}>MedOps</div>
             </div>
           </div>
           <p className="text-sm" style={{ color: 'var(--text2)' }}>IA para Previsão e Redistribuição de Filas Cirúrgicas</p>

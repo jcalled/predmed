@@ -4,7 +4,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'PREDMED — IA para Filas Cirúrgicas',
-  description: 'eKLICK Healthcare AI | Previsão, Priorização e Redistribuição de Filas do SUS',
+  description: 'MedOps | Previsão, Priorização e Redistribuição de Filas do SUS',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
