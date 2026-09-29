@@ -69,8 +69,10 @@ class PacienteFila(Base):
     classif_swalis   = Column(String, index=True)
     judicializado    = Column(Boolean, default=False)
     procedimento     = Column(String)
-    data_insercao    = Column(String)
+    data_insercao    = Column(String, index=True)  # data da solicitação (AAAA-MM-DD), fonte IntegraSUS
     data_atualizacao = Column(String)  # data do CSV importado
+    posicao_fila     = Column(Integer, nullable=True)  # posição informada pela fonte
+    solicitacao_hash = Column(String(64), nullable=True, index=True)  # nº de solicitação pseudonimizado (HMAC)
     
     hospital_id = Column(Integer, ForeignKey("hospitais.id"), nullable=True, index=True)
     hospital = relationship("Hospital", back_populates="pacientes")
@@ -346,5 +348,29 @@ def get_db():
         db.close()
 
 
+# Colunas acrescentadas depois da criação das tabelas. create_all não altera
+# tabelas existentes; até adotarmos Alembic (ADR-002), adicionamos aqui.
+_COLUNAS_NOVAS = {
+    "pacientes_fila": {
+        "posicao_fila": "INTEGER",
+        "solicitacao_hash": "VARCHAR(64)",
+    },
+}
+
+
+def _migrar_colunas():
+    from sqlalchemy import inspect, text
+    insp = inspect(engine)
+    with engine.begin() as conn:
+        for tabela, colunas in _COLUNAS_NOVAS.items():
+            if not insp.has_table(tabela):
+                continue
+            existentes = {c["name"] for c in insp.get_columns(tabela)}
+            for nome, tipo in colunas.items():
+                if nome not in existentes:
+                    conn.execute(text(f"ALTER TABLE {tabela} ADD COLUMN {nome} {tipo}"))
+
+
 def init_db():
     Base.metadata.create_all(bind=engine)
+    _migrar_colunas()

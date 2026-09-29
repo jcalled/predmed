@@ -44,7 +44,9 @@ export default function FilaPage() {
     <div className="animate-fadein">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Fila Cirúrgica</h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--text2)' }}>Última importação — IntegraSUS SESA/CE</p>
+        <p className="text-sm mt-1" style={{ color: 'var(--text2)' }}>
+          Fonte: IntegraSUS SESA/CE (painel público, coleta automática). Espera contada desde a data da solicitação.
+        </p>
       </div>
 
       {/* KPIs */}
@@ -52,7 +54,12 @@ export default function FilaPage() {
         <KPICard label="Total na Fila" value={stats?.total ?? 0} detail="Pacientes aguardando" color="red" />
         <KPICard label="Categoria A1" value={stats?.a1 ?? 0} detail="Risco imediato" color="yellow" />
         <KPICard label="Judicializados" value={stats?.judicializados ?? 0} detail="Ordens judiciais" color="red" />
-        <KPICard label="Página" value={`${page} / ${Math.ceil((data?.total || 0) / 50)}`} detail={`${data?.total?.toLocaleString('pt-BR') || '—'} total`} color="blue" />
+        <KPICard
+          label="Espera mediana"
+          value={stats?.espera_mediana_dias != null ? `${stats.espera_mediana_dias} dias` : '—'}
+          detail="Metade da fila espera mais que isso"
+          color="blue"
+        />
       </div>
 
       {/* Filtros */}
@@ -71,7 +78,7 @@ export default function FilaPage() {
           onChange={e => { setSwalis(e.target.value); setPage(1) }}
         >
           <option value="">Todas as categorias</option>
-          {['Categoria A1', 'Categoria A2', 'Categoria B', 'Categoria C', 'Categoria D'].map(s => (
+          {['Categoria A1', 'Categoria A2', 'Categoria B', 'Categoria C', 'Categoria D', 'Não Informada'].map(s => (
             <option key={s} value={s}>{s}</option>
           ))}
         </select>
@@ -107,6 +114,7 @@ export default function FilaPage() {
                 <th>SWALIS</th>
                 <th>Município</th>
                 <th>Judicial</th>
+                <th className="text-right">Espera</th>
               </tr>
             </thead>
             <tbody>
@@ -126,6 +134,8 @@ export default function FilaPage() {
                 municipio: string
                 judicializado: boolean
                 procedimento: string
+                data_insercao: string | null
+                dias_espera: number | null
               }, i: number) => (
                 <tr key={p.id}>
                   <td className="font-mono text-xs" style={{ color: 'var(--text2)' }}>{(page - 1) * 50 + i + 1}</td>
@@ -148,6 +158,9 @@ export default function FilaPage() {
                       ? <span className="badge badge-red" style={{ fontSize: 10 }}>⚖️ Sim</span>
                       : <span className="text-xs" style={{ color: 'var(--text2)' }}>—</span>
                     }
+                  </td>
+                  <td className="text-right text-xs font-mono" title={p.data_insercao ? `Solicitação em ${p.data_insercao.split('-').reverse().join('/')}` : 'Sem data'}>
+                    {p.dias_espera != null ? `${p.dias_espera.toLocaleString('pt-BR')} d` : '—'}
                   </td>
                 </tr>
               ))}

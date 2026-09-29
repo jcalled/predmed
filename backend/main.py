@@ -242,6 +242,20 @@ def _mascara_iniciais(db: Session, user: Usuario):
     return lambda p: p.iniciais if chave and chave in (p.hospital_nome or "").upper() else None
 
 
+def _data_referencia() -> date:
+    """Hoje. A fila é coletada 2x/dia, então a espera é contada até a data atual."""
+    return date.today()
+
+
+def _dias_espera(data_insercao: Optional[str]) -> Optional[int]:
+    if not data_insercao:
+        return None
+    try:
+        return (_data_referencia() - date.fromisoformat(data_insercao[:10])).days
+    except ValueError:
+        return None
+
+
 # ─── FILA CIRÚRGICA ───────────────────────────────────────
 @app.get("/fila")
 def fila(
@@ -284,11 +298,18 @@ def fila(
          "Categoria C": 3, "Categoria D": 4},
         value=PacienteFila.classif_swalis, else_=5
     )
-    rows = q.order_by(swalis_order).offset((page - 1) * limit).limit(limit).all()
+    # Dentro da mesma categoria SWALIS, quem espera há mais tempo vem primeiro
+    rows = q.order_by(swalis_order, PacienteFila.data_insercao.asc()) \
+        .offset((page - 1) * limit).limit(limit).all()
 
+    datas = sorted(d for (d,) in escopo.with_entities(PacienteFila.data_insercao)
+                   .filter(PacienteFila.data_insercao.isnot(None)).all())
     stats = {
         "total": total,
         "total_escopo_agregado": escopo.count(),
+        # Espera medida desde a data da solicitação informada pelo IntegraSUS
+        "espera_mediana_dias": _dias_espera(datas[len(datas) // 2]) if datas else None,
+        "data_referencia": _data_referencia(),
         "a1": escopo.filter(PacienteFila.classif_swalis == "Categoria A1").count(),
         "judicializados": escopo.filter(PacienteFila.judicializado == True).count(),
         "especialidades": [
@@ -315,6 +336,7 @@ def fila(
                 "judicializado": r.judicializado,
                 "procedimento": r.procedimento,
                 "data_insercao": r.data_insercao,
+                "dias_espera": _dias_espera(r.data_insercao),
             }
             for r in rows
         ]
