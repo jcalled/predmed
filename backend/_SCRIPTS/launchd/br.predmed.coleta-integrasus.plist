@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Coleta da fila IntegraSUS 2x/dia no Mac do desenvolvedor (provisório até a AWS).
+     Instalação: ver docs/dados/coleta-integrasus.md -->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>br.predmed.coleta-integrasus</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/juniormarcal/MedOps/predmed-mvp/backend/venv/bin/python</string>
+    <string>/Users/juniormarcal/MedOps/predmed-mvp/backend/_SCRIPTS/coleta_fila_integrasus.py</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict><key>Hour</key><integer>7</integer><key>Minute</key><integer>0</integer></dict>
+    <dict><key>Hour</key><integer>19</integer><key>Minute</key><integer>0</integer></dict>
+  </array>
+  <key>StandardOutPath</key>
+  <string>/Users/juniormarcal/PredmedDados/logs/coleta-integrasus.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/juniormarcal/PredmedDados/logs/coleta-integrasus.log</string>
+  <key>ProcessType</key>
+  <string>Background</string>
+</dict>
+</plist>
