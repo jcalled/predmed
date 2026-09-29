@@ -66,7 +66,8 @@ export const redistApi = {
 
 // ── Priorização ──────────────────────────────────────────
 export const priorizacaoApi = {
-  get: () => api.get('/priorizacao').then(r => r.data),
+  get: (params?: { limit?: number; especialidade?: string; apenas_oncologia?: boolean; apenas_judicializados?: boolean }) =>
+    api.get('/priorizacao', { params }).then(r => r.data),
 }
 
 // ── Judicializados ──────────────────────────────────────
@@ -79,6 +80,11 @@ export const configApi = {
   getVagas: () => api.get('/configuracoes/vagas').then(r => r.data),
   updateVaga: (data: { especialidade: string; vagas_mes: number; ativo: boolean }) =>
     api.put('/configuracoes/vagas', data).then(r => r.data),
+}
+
+// ── Status da coleta (SESA e SMS) ────────────────────────
+export const coletaApi = {
+  status: (n = 10) => api.get('/coleta/status', { params: { n } }).then(r => r.data),
 }
 
 // ── Relatórios ──────────────────────────────────────────
@@ -112,6 +118,14 @@ export const previsoesApi = {
   recalcular: () => api.post('/previsoes/recalcular').then(r => r.data),
 }
 
+// Previsão da PRODUÇÃO cirúrgica SIH (modelo validado fora da amostra; não é a fila)
+export const previsaoProducaoApi = {
+  get: (especialidade?: string, carater: 'TODOS' | 'ELETIVO' = 'TODOS') =>
+    api.get('/previsoes/producao', { params: { ...(especialidade && { especialidade }), carater } }).then(r => r.data),
+  resumo: (carater: 'TODOS' | 'ELETIVO' = 'TODOS') =>
+    api.get('/previsoes/producao/resumo', { params: { carater } }).then(r => r.data),
+}
+
 // ── Zerar Filas ──────────────────────────────────────────
 export const zerarFilasApi = {
   get: () => api.get('/zerarfilas').then(r => r.data),
@@ -134,18 +148,19 @@ export const previsoesMlApi = {
 
 
 // ── Analytics ──────────────────────────────────────────
+// Mortalidade e valor pago SUS saíram da UI (docs/ux/arquitetura-telas.md);
+// os endpoints do backend continuam existindo, mas o frontend não os chama.
 export const analyticsApi = {
-  resumo: () => api.get('/analytics/resumo').then(r => r.data),
   sazonalidade: () => api.get('/analytics/sazonalidade').then(r => r.data),
-  mortalidade: (ano: number) =>
-    api.get('/analytics/mortalidade', { params: { ano } }).then(r => r.data),
+  // Só o volume mensal de internações é exibido (aba Sazonalidade)
   pressaoHistorica: () => api.get('/analytics/pressao-historica').then(r => r.data),
 
-  // ✅ Simulador
+  // Oportunidades SUS (hospital particular) — valores simulados
   simuladorReceita: (vagas: Record<string, number>) =>
     api.post('/analytics/simulador-receita', vagas).then(r => r.data),
 
-  // ✅ Validação (MAPE)
-  validacaoMape: (especialidade: string, meses: number) =>
-    api.get('/analytics/validacao-mape', { params: { especialidade, meses } }).then(r => r.data),
+  // Previsão de demanda → aba Validação do modelo (MAPE, holdout SIH)
+  // (o parâmetro `meses` é ignorado pela API quando há avaliação versionada)
+  validacaoMape: (especialidade: string, meses: number = 6, carater: 'TODOS' | 'ELETIVO' = 'TODOS') =>
+    api.get('/analytics/validacao-mape', { params: { especialidade, meses, carater } }).then(r => r.data),
 }

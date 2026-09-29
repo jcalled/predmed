@@ -1,0 +1,18 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "api",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "cd backend && APP_ENV=dev exec venv/bin/python -m uvicorn main:app --host 127.0.0.1 --port 8000"],
+      "port": 8000,
+      "url": "http://localhost:8000"
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "cd frontend && exec npm run dev"],
+      "port": 3000
+    }
+  ]
+}

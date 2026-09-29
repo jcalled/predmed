@@ -20,6 +20,7 @@ from database import (
     HospitalEspecialidade,
 )
 from datetime import datetime
+from services.pseudonimizacao import pseudonimizar
 
 
 class ImportacaoInvalida(ValueError):
@@ -610,6 +611,102 @@ def _valor_texto(row, col) -> str:
     return str(v).strip()
 
 
+SWALIS_NAO_INFORMADA = "Não Informada"
+
+
+def _data_iso(valor: str):
+    """'2025-12-03T10:21:00.000+0000' ou '03/12/2025' → '2025-12-03'; vazio → None."""
+    if not valor:
+        return None
+    v = str(valor).strip()
+    if re.match(r"^\d{4}-\d{2}-\d{2}", v):
+        return v[:10]
+    m = re.match(r"^(\d{2})/(\d{2})/(\d{4})", v)
+    if m:
+        return f"{m.group(3)}-{m.group(2)}-{m.group(1)}"
+    return None
+
+
+# Numerações de solicitação atuais do sistema de regulação (7 e 11 dígitos): datas
+# 100% coerentes com a ordem do número. Numerações legadas (3–6 dígitos) têm datas
+# de 2006 a 2022 fora de ordem — tratadas como "data a confirmar".
+_DIGITOS_NUMERACAO_ATUAL = {7, 11}
+
+
+def _data_confiavel(cod_solicitacao):
+    texto = str(cod_solicitacao or "").strip()
+    if not texto.isdigit():
+        return None
+    return len(texto) in _DIGITOS_NUMERACAO_ATUAL
+
+
+def _inteiro(valor):
+    try:
+        return int(str(valor).strip())
+    except (TypeError, ValueError):
+        return None
+
+
+def _ler_coleta_integrasus(path: str) -> list:
+    """
+    Lê uma coleta do endpoint JSON do painel 214 (ver docs/dados/coleta-integrasus.md):
+    arquivo .json.xz.enc (criptografado pela coleta) ou .json simples.
+    """
+    import lzma
+    if not os.path.exists(path):
+        raise ImportacaoInvalida(f"Arquivo não encontrado: {os.path.basename(path)}")
+    bruto = open(path, "rb").read()
+    try:
+        if path.endswith(".enc"):
+            from cryptography.fernet import Fernet
+            chave = os.getenv("PREDMED_COLETA_KEY")
+            if not chave:
+                arq = os.path.join(os.path.expanduser("~"), ".predmed", "coleta.key")
+                if not os.path.exists(arq):
+                    raise ImportacaoInvalida("Chave da coleta não encontrada (~/.predmed/coleta.key)")
+                chave = open(arq).read().strip()
+            bruto = lzma.decompress(Fernet(chave.encode()).decrypt(bruto))
+        elif path.endswith(".xz"):
+            bruto = lzma.decompress(bruto)
+        dados = json.loads(bruto)
+    except ImportacaoInvalida:
+        raise
+    except Exception as e:
+        raise ImportacaoInvalida(f"Coleta ilegível: {type(e).__name__}") from None
+
+    if not isinstance(dados, list) or not dados:
+        raise ImportacaoInvalida("Coleta vazia ou em formato inesperado")
+    faltando = {"estabelecimento", "especialidade", "data"} - set(dados[0])
+    if faltando:
+        raise ImportacaoInvalida(f"Formato da coleta mudou; chaves ausentes: {sorted(faltando)}")
+
+    registros, ignoradas = [], 0
+    for r in dados:
+        hospital_nome = str(r.get("estabelecimento") or "").strip()
+        especialidade = str(r.get("especialidade") or "").strip().upper()
+        if not hospital_nome or not especialidade:
+            ignoradas += 1
+            continue
+        registros.append({
+            "iniciais": (str(r.get("nome") or "").strip()[:10]) or None,
+            "municipio": str(r.get("municipio") or "").strip().upper() or "DESCONHECIDO",
+            "hospital_nome": hospital_nome,
+            "especialidade": especialidade,
+            "classif_swalis": str(r.get("descSwalis") or "").strip() or SWALIS_NAO_INFORMADA,
+            "judicializado": str(r.get("mandadoJudicial") or "").strip().upper().startswith("S"),
+            "procedimento": (str(r.get("procedimento") or "").strip()[:200]) or None,
+            "data_insercao": _data_iso(r.get("data")),
+            "posicao_fila": _inteiro(r.get("posicao")),
+            "solicitacao_hash": pseudonimizar(r.get("codSolicitacao")),
+            "data_confiavel": _data_confiavel(r.get("codSolicitacao")),
+        })
+    if not registros:
+        raise ImportacaoInvalida("Nenhum registro válido na coleta; fila atual mantida")
+    print(f"[INTEGRASUS] Coleta JSON: {len(registros):,} registros"
+          + (f" ({ignoradas} ignorados)" if ignoradas else ""))
+    return registros
+
+
 def _ler_e_validar_integrasus(csv_path: str) -> list:
     """
     Lê e valida o CSV sem tocar no banco. Retorna lista de dicts prontos para inserir.
@@ -635,7 +732,9 @@ def _ler_e_validar_integrasus(csv_path: str) -> list:
         "iniciais":      ["INIC_NOME_PACIENTE", "INICIAIS", "PACIENTE"],
         "judicial":      ["JUDICIALIZADO", "JUDICIAL", "ORDEM_JUDICIAL"],
         "procedimento":  ["PROCEDIMENTO", "NM_PROCEDIMENTO", "DS_PROCEDIMENTO"],
-        "data":          ["DT_INCLUSAO", "DATA_INCLUSAO", "DATA_ENTRADA"],
+        "data":          ["DT_INCLUSAO", "DATA_INCLUSAO", "DATA_ENTRADA", "DATA"],
+        "posicao":       ["POSICAO_FILA", "POSICAO"],
+        "solicitacao":   ["NUN_SOLICITACAO", "NUM_SOLICITACAO", "COD_SOLICITACAO"],
     }
 
     def get_col(options):
@@ -664,10 +763,13 @@ def _ler_e_validar_integrasus(csv_path: str) -> list:
             "municipio": _valor_texto(row, cols["municipio"]).upper() or "DESCONHECIDO",
             "hospital_nome": hospital_nome,
             "especialidade": especialidade,
-            "classif_swalis": _valor_texto(row, cols["swalis"]) or "Categoria D",
+            "classif_swalis": _valor_texto(row, cols["swalis"]) or SWALIS_NAO_INFORMADA,
             "judicializado": judicial,
             "procedimento": _valor_texto(row, cols["procedimento"])[:200] or None,
-            "data_insercao": _valor_texto(row, cols["data"]) or None,
+            "data_insercao": _data_iso(_valor_texto(row, cols["data"])),
+            "posicao_fila": _inteiro(_valor_texto(row, cols["posicao"])),
+            "solicitacao_hash": pseudonimizar(_valor_texto(row, cols["solicitacao"])),
+            "data_confiavel": _data_confiavel(_valor_texto(row, cols["solicitacao"])),
         })
 
     if not registros:
@@ -685,8 +787,12 @@ def import_integrasus(csv_path: str, db: Session) -> int:
     3) commit só no fim — qualquer erro faz rollback e a fila anterior é preservada.
     Levanta ImportacaoInvalida se o arquivo for rejeitado.
     """
-    registros = _ler_e_validar_integrasus(csv_path)
-    data_import_str = datetime.now().strftime("%Y-%m-%d")
+    if csv_path.endswith((".json", ".json.xz", ".json.xz.enc")):
+        registros = _ler_coleta_integrasus(csv_path)
+    else:
+        registros = _ler_e_validar_integrasus(csv_path)
+    m = re.search(r"(\d{4})(\d{2})(\d{2})T\d{6}", os.path.basename(csv_path))
+    data_import_str = f"{m.group(1)}-{m.group(2)}-{m.group(3)}" if m else datetime.now().strftime("%Y-%m-%d")
     hospital_cache = {}
 
     try:
@@ -738,6 +844,10 @@ def import_integrasus(csv_path: str, db: Session) -> int:
         if batch:
             db.bulk_save_objects(batch)
         db.flush()
+
+        # Vínculo nome → CNES já revisado (ALTA ou manual) vale para cada nova carga.
+        from services.cnes_vinculo import aplicar_cnes_na_fila
+        aplicar_cnes_na_fila(db)
 
         hospital_cir_map = build_hospital_cir_map(db)
         _salvar_hospital_cir_map(hospital_cir_map, db, commit=False)
@@ -843,6 +953,13 @@ def build_hospital_especialidades(db: Session, commit: bool = True):
 # AUTO IMPORT E SEEDS (opcional, para testes)
 # ═══════════════════════════════════════════════════════════════════════
 
+def ultima_coleta_integrasus():
+    """Caminho da coleta automática mais recente (PREDMED_DADOS_DIR), ou None."""
+    base = os.getenv("PREDMED_DADOS_DIR", os.path.join(os.path.expanduser("~"), "PredmedDados"))
+    arquivos = sorted(glob.glob(os.path.join(base, "integrasus", "fila", "*", "*", "fila_*.json.xz.enc")))
+    return arquivos[-1] if arquivos else None
+
+
 def auto_import(db: Session, importar_datasus: bool = True, importar_fila: bool = True):
     """Importa os CSVs mais recentes de backend/data/ (sem apagar nada se o CSV faltar)."""
     base = os.path.join(os.path.dirname(__file__), "..", "data")
@@ -858,6 +975,13 @@ def auto_import(db: Session, importar_datasus: bool = True, importar_fila: bool 
             _seed_demo_datasus(db)
 
     if importar_fila:
+        coleta = ultima_coleta_integrasus()
+        if coleta:
+            try:
+                import_integrasus(coleta, db)
+                return
+            except ImportacaoInvalida as e:
+                print(f"[INTEGRASUS] Coleta rejeitada ({e}); tentando CSV de data/")
         integra_files = sorted(
             glob.glob(os.path.join(base, "*fila*.csv")) +
             glob.glob(os.path.join(base, "*consulta*.csv")) +

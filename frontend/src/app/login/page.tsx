@@ -2,6 +2,7 @@
 import { useState, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth'
+import Wordmark from '@/components/marca/Wordmark'
 
 const DEMO_USERS = [
   { label: '🏛️ SESA (Secretaria)', email: 'sesa@predmed.com', role: 'Gestor Estadual — vê tudo, aprova transferências' },
@@ -50,15 +51,10 @@ export default function LoginPage() {
       <div className="w-full max-w-md mx-4 z-10 animate-slideup">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ background: 'rgba(0,194,255,0.1)', border: '1px solid rgba(0,194,255,0.25)' }}>
-              🧠
-            </div>
-            <div className="text-left">
-              <div className="text-2xl font-bold tracking-tight text-text1">PREDMED</div>
-              <div className="text-xs" style={{ color: 'var(--text2)' }}>eKLICK Healthcare AI</div>
-            </div>
-          </div>
+          <h1 className="mb-4 flex justify-center">
+            <Wordmark tamanho="lg" />
+            <span className="sr-only"> — acesso</span>
+          </h1>
           <p className="text-sm" style={{ color: 'var(--text2)' }}>IA para Previsão e Redistribuição de Filas Cirúrgicas</p>
         </div>
 
@@ -66,8 +62,10 @@ export default function LoginPage() {
         <div className="card">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium mb-2" style={{ color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>E-mail</label>
+              <label htmlFor="login-email" className="block text-xs font-medium mb-2" style={{ color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>E-mail</label>
               <input
+                id="login-email"
+                autoComplete="username"
                 type="email"
                 className="input-dark"
                 value={email}
@@ -78,8 +76,10 @@ export default function LoginPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium mb-2" style={{ color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Senha</label>
+              <label htmlFor="login-senha" className="block text-xs font-medium mb-2" style={{ color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Senha</label>
               <input
+                id="login-senha"
+                autoComplete="current-password"
                 type="password"
                 className="input-dark"
                 value={password}
@@ -90,7 +90,7 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="text-sm px-3 py-2 rounded-lg" style={{ background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.2)', color: 'var(--red)' }}>
+              <div role="alert" className="text-sm px-3 py-2 rounded-lg" style={{ background: 'rgba(255,107,107,0.08)', border: '1px solid rgba(255,68,68,0.2)', color: 'var(--red)' }}>
                 {error}
               </div>
             )}
@@ -114,6 +114,7 @@ export default function LoginPage() {
             {DEMO_USERS.map(u => (
               <button
                 key={u.email}
+                type="button"
                 onClick={() => { setEmail(u.email); setPassword(SENHA_DEMO) }}
                 className="w-full text-left px-4 py-3 rounded-lg transition-all"
                 style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}

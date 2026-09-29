@@ -11,6 +11,7 @@ from database import PacienteFila, CapacidadeHospital, ConfigVagas, Transferenci
 from services.data_import import CIR_OFICIAL
 
 from services.cir_config import pode_transferir, get_macro_regiao, MACRO_POR_REGIAO
+from services import redistribuicao as rd
 
 # CIR mapping aproximado (municípios → CIR)
 # CIR_MAP = {
@@ -457,305 +458,101 @@ def inferir_cir_from_nome(nome: str) -> str:
 #     result.sort(key=lambda x: x["pressao"], reverse=True)
 #     return result
 
-def get_hospitais_pressao(db: Session, cir: Optional[str] = None) -> List[Dict]:
+def _cir_fallback_fila(db: Session) -> Dict[str, str]:
+    """CIR dos nomes da fila SEM CNES: HospitalCirMap (município de residência dos pacientes)."""
     from database import HospitalCirMap
+    return {r.hospital_nome: r.cir for r in db.query(HospitalCirMap).all()
+            if r.cir and (r.confianca or 0) >= 0.3}
 
-    # Carrega mapa hospital → CIR (gerado pelo IntegraSUS)
-    cir_map = {
-        row.hospital_nome: {"municipio": row.municipio, "cir": row.cir, "confianca": row.confianca}
-        for row in db.query(HospitalCirMap).all()
-    }
 
-    fila_rows = db.query(
-        PacienteFila.hospital_nome,
-        func.count(PacienteFila.id).label("fila_atual"),
-    ).group_by(PacienteFila.hospital_nome).all()
+def get_hospitais_pressao(db: Session, cir: Optional[str] = None) -> List[Dict]:
+    """Pressão (fila ÷ produção SIH) e ociosidade ESTIMADA por estabelecimento (CNES).
+    Metodologia: services/redistribuicao.py e docs/dados/redistribuicao-v1.md."""
+    base = rd.carregar_base(db)
+    hospitais = rd.estimar_hospitais(base)
+    fallback = _cir_fallback_fila(db) if base.fila_sem_cnes else {}
+    for h in hospitais:
+        if not h.get("cnes") and h["hospital_nome"] in fallback:
+            h["cir"] = fallback[h["hospital_nome"]]
+            h["cir_fonte"] = "residencia_pacientes"
+    hospitais = [h for h in hospitais if h["cir"] != "FORA_DO_CEARA"]
+    if cir:
+        hospitais = [h for h in hospitais if h["cir"] == cir]
+    return hospitais
 
-    cap_rows = {
-        row.hospital_nome.upper(): row
-        for row in db.query(CapacidadeHospital).all()
-    }
 
-    import unicodedata
-    def _norm(s):
-        return unicodedata.normalize('NFKD', str(s)).encode('ascii', 'ignore').decode().upper()
-
-    result = []
-    for hosp_nome, fila_atual in fila_rows:
-        # 1. CIR pelo HospitalCirMap (fonte: pacientes do IntegraSUS) ← NOVO
-        info_cir = cir_map.get(hosp_nome)
-        if info_cir and info_cir["confianca"] >= 0.3:
-            municipio = info_cir["municipio"]
-            cir_hosp  = info_cir["cir"]
-        else:
-            # 2. Fallback: inferência por nome
-            cir_hosp  = inferir_cir_from_nome(hosp_nome)
-            municipio = hosp_nome
-
-        # Filtra FORA_DO_CEARA e DESCONHECIDO
-        if cir_hosp in ("FORA_DO_CEARA", "DESCONHECIDO"):
-            continue
-
-        if cir and cir_hosp != cir:
-            continue
-
-        # Match DATASUS por nome normalizado
-        cap = None
-        nome_norm = _norm(hosp_nome)
-        for k, v in cap_rows.items():
-            if nome_norm[:15] in _norm(k) or _norm(k)[:15] in nome_norm:
-                cap = v
-                break
-
-        media = cap.media_mensal if cap else 0
-        tipo  = cap.tipo if cap else "publico"
-
-        pressao = calc_pressao(fila_atual, media)
-        result.append({
-            "hospital_nome":   hosp_nome,
-            "municipio":       municipio,
-            "cir":             cir_hosp,
-            "tipo":            tipo,
-            "fila_atual":      fila_atual,
-            "media_mensal":    round(media, 0),
-            "pressao":         pressao,
-            "pressao_status":  pressao_status(pressao),
-            "confianca":       info_cir["confianca"] if info_cir else None,
-        })
-
-    result.sort(key=lambda x: x["pressao"], reverse=True)
-    return result
-
-def get_especialidades_hospital(db: Session, hospital_nome: str) -> List[str]:
-    """
-    Retorna especialidades que um hospital atende.
-    Fonte: HospitalEspecialidade (populada pelo IntegraSUS).
-    Se tabela vazia → retorna ["*"] (aceita tudo — não bloqueia redistribuição).
-    """
-    from database import HospitalEspecialidade
-
-    resultados = db.query(HospitalEspecialidade.especialidade).filter(
-        HospitalEspecialidade.hospital_nome.ilike(f"%{hospital_nome[:20]}%"),
-        HospitalEspecialidade.total_procedimentos > 0
-    ).distinct().all()
-
-    esps = [r[0] for r in resultados]
-
-    # Fallback: tabela vazia = não bloqueia (redistribuição funciona sem CNES)
-    if not esps:
-        return ["*"]
-
-    return esps
-
-def get_redistribuicao_sugestoes(db: Session, cir_filter: Optional[str] = None) -> Dict:
-    """Gera sugestões de redistribuição respeitando hierarquia SUS"""
-    hospitais = get_hospitais_pressao(db)
-
-    CONFIG_SUGESTOES = 100000
-
-    # Filtra pressão absurda (media_mensal=0 → pressão infinita — ignora)
-    sobrecarregados = [
-        h for h in hospitais
-        if h["pressao"] >= 2.0 and h["media_mensal"] > 0
-        and h["cir"] not in ("DESCONHECIDO", "FORA_DO_CEARA")
-    ]
-    ociosos = [
-        h for h in hospitais
-        if h["pressao"] < 0.8 and h["media_mensal"] > 10
-        and h["cir"] not in ("DESCONHECIDO", "FORA_DO_CEARA")
-    ]
- 
-
-    # Se tiver filtro, limita aos hospitais da CIR selecionada
-    if cir_filter:
-        sobrecarregados = [h for h in sobrecarregados if h["cir"] == cir_filter]
-        ociosos = [h for h in ociosos if h["cir"] == cir_filter]
-
+def _vagas_declaradas(db: Session) -> List[Dict]:
+    """Vagas SUS informadas por hospitais particulares (capacidade confirmada pelo hospital)."""
+    from database import Tenant
     mes_atual = date.today().strftime("%Y-%m")
-    transfer_mes = db.query(Transferencia).filter(
-        Transferencia.data_aprovacao >= f"{mes_atual}-01",
-        Transferencia.status == "aprovado"
-    ).all()
-    ja_transferido = {}
-    for t in transfer_mes:
-        ja_transferido[t.hospital_destino] = ja_transferido.get(t.hospital_destino, 0) + t.qtd_pacientes
-
-    # Pré-carrega ConfigVagas de todos os particulares
-    from database import ConfigVagas, Tenant
-    import unicodedata
-
-    def _norm(s):
-        return unicodedata.normalize('NFKD', s).encode('ascii', 'ignore').decode().upper()
-
-    vagas_particulares: Dict[int, Dict[str, int]] = {}
-    tenants_part = db.query(Tenant).filter(
-        Tenant.tipo == "hospital_particular", Tenant.ativo == True
-    ).all()
-
-    for t in tenants_part:
-        cfg_list = db.query(ConfigVagas).filter(
-            ConfigVagas.tenant_id == t.id,
-            ConfigVagas.ativo == True,
-            ConfigVagas.vagas_mes > 0
-        ).all()
-        esps = {}
-        for cfg in cfg_list:
+    out = []
+    for t in db.query(Tenant).filter(Tenant.tipo == "hospital_particular", Tenant.ativo == True).all():  # noqa: E712
+        for cfg in db.query(ConfigVagas).filter(ConfigVagas.tenant_id == t.id, ConfigVagas.ativo == True,  # noqa: E712
+                                                ConfigVagas.vagas_mes > 0).all():
             aceito = db.query(func.sum(Transferencia.qtd_pacientes)).filter(
                 Transferencia.tenant_destino_id == t.id,
                 Transferencia.especialidade == cfg.especialidade,
                 Transferencia.status == "aprovado",
-                Transferencia.data_aprovacao >= f"{mes_atual}-01"
+                Transferencia.data_aprovacao >= f"{mes_atual}-01",
             ).scalar() or 0
-            disponivel = max(0, cfg.vagas_mes - aceito)
-            if disponivel > 0:
-                esps[cfg.especialidade] = disponivel
-        if esps:
-            vagas_particulares[t.id] = esps
-
-    # Índice normalizado: nome do hospital → tenant_id
-    nome_para_tenant: Dict[str, int] = {}
-    for t in tenants_part:
-        nome_para_tenant[_norm(t.nome)] = t.id
-
-    def get_tenant_id(hospital_nome: str) -> Optional[int]:
-        n = _norm(hospital_nome)
-        for k, tid in nome_para_tenant.items():
-            if n[:12] in k or k[:12] in n:
-                return tid
-        return None
-
-    sugestoes = []
-    
-    # Agrupa destinos por prioridade
-    for origem in sobrecarregados[:20]:
-        esp_row = db.query(
-            PacienteFila.especialidade,
-            func.count(PacienteFila.id).label("n")
-        ).filter(
-            PacienteFila.hospital_nome == origem["hospital_nome"]
-        ).group_by(PacienteFila.especialidade).order_by(
-            func.count(PacienteFila.id).desc()
-        ).first()
-        especialidade = esp_row[0] if esp_row else "CIRURGIA GERAL"
-
-        # Separa destinos por prioridade
-        mesma_regiao = []
-        mesma_macro = []
-        outros = []
-        
-        for destino in ociosos:
-            if origem["hospital_nome"] == destino["hospital_nome"]:
-                continue
-                
-            if origem["cir"] == destino["cir"]:
-                mesma_regiao.append(destino)
-            elif pode_transferir(origem["cir"], destino["cir"]):
-                mesma_macro.append(destino)
-            else:
-                outros.append(destino)
-
-        # Tenta primeiro dentro da mesma região
-        destinos_prioridade = mesma_regiao + mesma_macro + outros
-        
-        for destino in destinos_prioridade:
-            tid = get_tenant_id(destino["hospital_nome"])
-
-            # Verifica vagas (público ou particular)
-            if tid and tid in vagas_particulares:
-                esps_disp = vagas_particulares[tid]
-                cap_esp = esps_disp.get(especialidade, 0)
-                if cap_esp <= 0:
-                    if not esps_disp:
-                        continue
-                    especialidade_dest = max(esps_disp, key=esps_disp.get)
-                    cap_esp = esps_disp[especialidade_dest]
-                else:
-                    especialidade_dest = especialidade
-                capacidade_livre = cap_esp
-            else:
-                # Público: usa DATASUS
-                ja_rec = ja_transferido.get(destino["hospital_nome"], 0)
-                capacidade_livre = max(0, destino["media_mensal"] - destino["fila_atual"] - ja_rec)
-                especialidade_dest = especialidade
-
-            if capacidade_livre < 3:
-                continue
-
-            qtd_sugerida = min(int(capacidade_livre * 0.9), int(origem["fila_atual"] * 0.3))
-            reducao_espera = max(10, int((origem["fila_atual"] / max(origem["media_mensal"], 1)) * 30))
-
-            # Adiciona metadados de hierarquia
-            # tipo_transferencia = "mesma_regiao" if origem["cir"] == destino["cir"] else \
-            #                     "mesma_macro" if mesma_macro else "outra_macro"
-
-            if destino in mesma_regiao:
-                tipo_transferencia = "mesma_regiao"
-            elif destino in mesma_macro:
-                tipo_transferencia = "mesma_macro"
-            else:
-                tipo_transferencia = "outra_macro"
+            disp = max(0, cfg.vagas_mes - aceito)
+            if disp > 0:
+                out.append({"tenant_id": t.id, "hospital_nome": t.nome, "cir": t.cir,
+                            "municipio": t.municipio_gestor, "especialidade": rd.especialidade_serie(cfg.especialidade),
+                            "disponivel": disp})
+    return out
 
 
+def get_redistribuicao_sugestoes(db: Session, cir_filter: Optional[str] = None) -> Dict:
+    """Sugestões de redistribuição dentro da MESMA CIR, com capacidade estimada (CNES + SIH)
+    ou declarada (vagas SUS do hospital particular). Tudo é ESTIMADO e apoio à decisão."""
+    base = rd.carregar_base(db)
+    hospitais = rd.estimar_hospitais(base)
 
-            especialidades_destino = get_especialidades_hospital(db, destino["hospital_nome"])
-            # Só filtra se tiver dados reais ("*" = tabela vazia, não bloqueia)
-            if "*" not in especialidades_destino and especialidade not in especialidades_destino:
-                continue  # Pula se o destino não atende a especialidade
+    mes_atual = date.today().strftime("%Y-%m")
+    ja_transferido: Dict[str, int] = {}
+    for t in db.query(Transferencia).filter(Transferencia.data_aprovacao >= f"{mes_atual}-01",
+                                            Transferencia.status == "aprovado").all():
+        ja_transferido[t.hospital_destino] = ja_transferido.get(t.hospital_destino, 0) + t.qtd_pacientes
 
-            sugestoes.append({
-                "origem": origem,
-                "destino": destino,
-                "especialidade": especialidade_dest,
-                "qtd_sugerida": qtd_sugerida,
-                "capacidade_livre": int(capacidade_livre),
-                # Estimativa heurística (fila/produção mensal × 30), não medida.
-                "reducao_espera_dias": reducao_espera,
-                "reducao_espera_origem": "simulado",
-                # Valor fixo de R$ 1.500 por AIH — simulação, não valor pago.
-                "aih_estimada": qtd_sugerida * VALOR_AIH_SIMULADO,
-                "aih_estimada_origem": "simulado",
-                # Distância ainda não calculada (antes era 25 km fixo).
-                "distancia_km": None,
-                "cir": origem["cir"],
-                "macro_origem": get_macro_regiao(origem["cir"]),
-                "macro_destino": get_macro_regiao(destino["cir"]),
-                "tipo_transferencia": tipo_transferencia,  # Para o frontend saber a prioridade
-            })
+    sugestoes = rd.sugerir_redistribuicao(hospitais, vagas_declaradas=_vagas_declaradas(db),
+                                          ja_transferido=ja_transferido, valor_aih=VALOR_AIH_SIMULADO)
+    for s in sugestoes:
+        s["macro_origem"] = get_macro_regiao(s["origem"]["cir"])
+        s["macro_destino"] = get_macro_regiao(s["destino"]["cir"])
 
-            if len(sugestoes) >= CONFIG_SUGESTOES:
-                break
-        if len(sugestoes) >= CONFIG_SUGESTOES:
-            break
-
-    # Estatísticas para o frontend
-    total_sobrecarregados = len(sobrecarregados)
-    total_ociosos = len(ociosos)
-    total_redistribuiveis = sum(s["qtd_sugerida"] for s in sugestoes)
-    
-    # CIRs disponíveis para o filtro
-    cirs_disponiveis = sorted(set(
-        h["cir"] for h in hospitais 
-        if h["cir"] not in ("DESCONHECIDO", "FORA_DO_CEARA")
-    ))
+    validos = [h for h in hospitais if h["cir"] not in ("DESCONHECIDO", "FORA_DO_CEARA")]
+    if cir_filter:
+        sugestoes = [s for s in sugestoes if s["cir"] == cir_filter]
+        validos = [h for h in validos if h["cir"] == cir_filter]
+    sobrecarregados = [h for h in validos if h["pressao_status"] in ("critico", "alerta") and h["fila_atual"] > 0]
+    com_ociosidade = [h for h in validos if h.get("ociosidade_estimada_mes", 0) >= 1]
 
     return {
         "sugestoes": sugestoes,
-        "total_sobrecarregados": total_sobrecarregados,
-        "total_ociosos": total_ociosos,
-        "total_redistribuiveis": total_redistribuiveis,
+        "total_sobrecarregados": len(sobrecarregados),
+        "total_ociosos": len(com_ociosidade),
+        "hospitais_com_ociosidade": len(com_ociosidade),
+        "ociosidade_total_mes": int(sum(h["ociosidade_estimada_mes"] for h in com_ociosidade)),
+        "total_redistribuiveis": int(sum(s["qtd_sugerida"] for s in sugestoes)),
+        "total_redistribuiveis_periodo": "por mês",
+        "sugestoes_com_vinculo_provisorio": sum(1 for s in sugestoes if s["vinculo_provisorio"]),
         "reducao_media_espera": None,
         "reducao_media_espera_status": "nao_validado",
-        "cirs_disponiveis": cirs_disponiveis,
+        "cirs_disponiveis": sorted({h["cir"] for h in hospitais if h["cir"] not in ("DESCONHECIDO", "FORA_DO_CEARA")}),
         "cir_selecionada": cir_filter,
-        # NOVO: estatísticas por macro
+        "natureza": "estimado",
+        "regra_regional": "mesma_cir",
+        "metodologia": rd.metodologia(base),
         "macros": {
             macro: {
                 "sobrecarregados": len([h for h in sobrecarregados if get_macro_regiao(h["cir"]) == macro]),
-                "ociosos": len([h for h in ociosos if get_macro_regiao(h["cir"]) == macro]),
+                "ociosos": len([h for h in com_ociosidade if get_macro_regiao(h["cir"]) == macro]),
             }
             for macro in set(MACRO_POR_REGIAO.values())
-        }
+        },
     }
+
 
 
 def get_vagas_status_tenant(db: Session, tenant_id: int) -> List[Dict]:

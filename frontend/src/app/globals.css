@@ -3,16 +3,68 @@
 @tailwind utilities;
 
 :root {
-  --bg:      #0A1628;
-  --surface: #0F1E35;
-  --surface2:#152238;
-  --border:  rgba(255,255,255,0.08);
-  --accent:  #00C2FF;
-  --accent2: #00FF9D;
-  --red:     #FF4444;
-  --yellow:  #FFD700;
-  --text:    #E8EEF7;
-  --text2:   #7A9CC4;
+  /* ------------------------------------------------------------------
+     Tokens de design PREDMED (tema escuro).
+     Contraste WCAG 2.1 AA verificado (docs/ux/auditoria-inicial.md, seção
+     "Tokens e contraste"). Razões medidas contra --surface (#0F1E35):
+       --text 14,3:1 · --text2 6,9:1 · --accent 8,1:1 · --accent2 12,6:1
+       --accent3 5,9:1 · --red 6,0:1 · --yellow 11,9:1
+     Sobre os fundos tingidos dos badges (10–12% de opacidade) todos
+     ficam >= 4,8:1. --border-strong (3,6:1 sobre --surface2) é o mínimo
+     para bordas de controles (WCAG 1.4.11, contraste não textual >= 3:1).
+     ------------------------------------------------------------------ */
+
+  /* Superfícies */
+  --bg:       #0A1628;
+  --surface:  #0F1E35;
+  --surface2: #152238;
+  --surface3: #1A2B40;               /* tooltips, popovers */
+  --border:   rgba(255,255,255,0.08); /* separadores decorativos */
+  --border-strong: #5F7AA0;          /* bordas de inputs, selects e botões */
+
+  /* Texto */
+  --text:  #E8EEF7;
+  --text1: #E8EEF7;   /* alias: componentes antigos usam --text1 */
+  --text2: #8FA9CC;   /* era #7A9CC4 (4,7:1 em fundo tingido); agora >= 5,5:1 */
+
+  /* Marca e semântica */
+  --accent:  #00C2FF; /* primária / informação */
+  --accent2: #00FF9D; /* sucesso / capacidade */
+  --accent3: #FF6B35; /* alerta laranja */
+  --red:     #FF6B6B; /* era #FF4444 (4,4:1 no badge vermelho); agora >= 5,0:1 */
+  --yellow:  #FFD700; /* atenção */
+  --focus:   #00C2FF; /* anel de foco (8,1:1 sobre --surface) */
+
+  /* Selos de natureza do dado */
+  --selo-medido:      #00FF9D;
+  --selo-estimado:    #00C2FF;
+  --selo-simulado:    #FFD700;
+  --selo-meta:        #C4B5FD;
+  --selo-naovalidado: #FF8A5B;
+
+  /* Tipografia */
+  --font-sans: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, 'SFMono-Regular', monospace;
+  --fs-2xs: 0.6875rem; /* 11px — mínimo para texto (evitar 9–10px) */
+  --fs-xs:  0.75rem;   /* 12px */
+  --fs-sm:  0.875rem;  /* 14px */
+  --fs-md:  1rem;      /* 16px */
+  --fs-lg:  1.125rem;  /* 18px */
+  --fs-xl:  1.5rem;    /* 24px — título de página */
+  --fs-kpi: 1.875rem;  /* 30px — valor de KPI */
+
+  /* Espaçamento (base 4px) */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 20px; --sp-6: 24px; --sp-8: 32px;
+
+  /* Raios */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 14px;
+
+  /* Layout */
+  --sidebar-w: 15rem; /* 240px */
+  --topbar-h:  3.5rem; /* 56px, só em telas < lg */
 }
 
 * { box-sizing: border-box; }
@@ -21,14 +73,39 @@ html, body { height: 100%; }
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
+}
+
+/* Foco visível em todos os interativos (WCAG 2.4.7). Só aparece na
+   navegação por teclado (:focus-visible), não no clique do mouse. */
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Link "Pular para o conteúdo" (eMAG 1.5): invisível até receber foco */
+.skip-link {
+  position: absolute; left: 8px; top: -100px; z-index: 100;
+  background: var(--accent); color: var(--bg); font-weight: 600;
+  padding: 8px 14px; border-radius: 8px; font-size: var(--fs-sm);
+}
+.skip-link:focus { top: 8px; }
+
+/* Respeita quem pediu menos movimento (WCAG 2.3.3) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Scrollbar customizada */
-::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: rgba(0,194,255,0.2); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(0,194,255,0.4); }
+::-webkit-scrollbar-thumb { background: rgba(0,194,255,0.3); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,194,255,0.5); }
 
 /* Animações */
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -36,31 +113,41 @@ body {
 .animate-fadein { animation: fadeIn 0.35s ease; }
 .animate-slideup { animation: slideUp 0.3s ease; }
 
+/* Tabela com rolagem horizontal própria: a página não estoura em telas
+   estreitas. O container é focável para rolar pelo teclado. */
+.tabela-rolavel { width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.tabela-rolavel > table { min-width: 720px; }
+
 /* Card base */
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   padding: 20px;
+  min-width: 0;
 }
+@media (max-width: 639px) { .card { padding: 14px; } }
 
 /* KPI card */
 .kpi-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 16px 20px;
   transition: border-color 0.2s;
+  min-width: 0;
 }
 .kpi-card:hover { border-color: rgba(0,194,255,0.25); }
+@media (max-width: 639px) { .kpi-card { padding: 12px 14px; } }
 
 /* Badge status */
-.badge { display: inline-flex; align-items: center; gap: 4px; border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 600; }
-.badge-red    { background: rgba(255,68,68,0.12);  color: var(--red);    border: 1px solid rgba(255,68,68,0.25); }
-.badge-green  { background: rgba(0,255,157,0.1);   color: var(--accent2);border: 1px solid rgba(0,255,157,0.25); }
-.badge-blue   { background: rgba(0,194,255,0.1);   color: var(--accent); border: 1px solid rgba(0,194,255,0.25); }
-.badge-yellow { background: rgba(255,215,0,0.1);   color: var(--yellow); border: 1px solid rgba(255,215,0,0.25); }
-.badge-gray   { background: rgba(122,156,196,0.1); color: var(--text2);  border: 1px solid rgba(122,156,196,0.2); }
+.badge { display: inline-flex; align-items: center; gap: 4px; border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.badge-red    { background: rgba(255,107,107,0.12); color: var(--red);     border: 1px solid rgba(255,107,107,0.3); }
+.badge-green  { background: rgba(0,255,157,0.1);    color: var(--accent2); border: 1px solid rgba(0,255,157,0.25); }
+.badge-blue   { background: rgba(0,194,255,0.1);    color: var(--accent);  border: 1px solid rgba(0,194,255,0.25); }
+.badge-yellow { background: rgba(255,215,0,0.1);    color: var(--yellow);  border: 1px solid rgba(255,215,0,0.25); }
+.badge-orange { background: rgba(255,107,53,0.1);   color: var(--accent3); border: 1px solid rgba(255,107,53,0.3); }
+.badge-gray   { background: rgba(143,169,204,0.1);  color: var(--text2);   border: 1px solid rgba(143,169,204,0.25); }
 
 /* Pressure bar */
 .pressure-bar-bg { height: 4px; background: var(--border); border-radius: 2px; margin-top: 8px; }
@@ -71,16 +158,18 @@ body {
 .btn-primary:hover { background: rgba(0,194,255,0.2); }
 .btn-green { background: rgba(0,255,157,0.1); border: 1px solid rgba(0,255,157,0.3); color: var(--accent2); border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
 .btn-green:hover { background: rgba(0,255,157,0.2); }
-.btn-red { background: rgba(255,68,68,0.08); border: 1px solid rgba(255,68,68,0.25); color: var(--red); border-radius: 8px; padding: 8px 18px; font-size: 13px; cursor: pointer; transition: all 0.2s; }
-.btn-red:hover { background: rgba(255,68,68,0.15); }
+.btn-red { background: rgba(255,107,107,0.08); border: 1px solid rgba(255,107,107,0.3); color: var(--red); border-radius: 8px; padding: 8px 18px; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+.btn-red:hover { background: rgba(255,107,107,0.15); }
+button:disabled, .btn-primary:disabled, .btn-green:disabled, .btn-red:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* Input */
-.input-dark { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 10px 14px; font-size: 14px; width: 100%; transition: border-color 0.2s; outline: none; }
-.input-dark:focus { border-color: rgba(0,194,255,0.4); }
+.input-dark { background: var(--surface2); border: 1px solid var(--border-strong); color: var(--text); border-radius: 8px; padding: 10px 14px; font-size: 14px; width: 100%; transition: border-color 0.2s; }
+.input-dark::placeholder { color: var(--text2); opacity: 1; }
+.input-dark:focus { border-color: var(--accent); }
 
 /* Table */
 .table-predmed { width: 100%; border-collapse: collapse; font-size: 13px; }
-.table-predmed th { text-align: left; padding: 10px 12px; font-size: 11px; color: var(--text2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); }
+.table-predmed th { text-align: left; padding: 10px 12px; font-size: 11px; color: var(--text2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); white-space: nowrap; }
 .table-predmed td { padding: 11px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
 .table-predmed tr:hover td { background: rgba(0,194,255,0.03); }
 
@@ -91,7 +180,7 @@ body {
 .redis-info { font-size: 11px; color: var(--text2); }
 .redis-arrow { display: flex; flex-direction: column; align-items: center; gap: 2px; flex-shrink: 0; min-width: 100px; text-align: center; }
 .redis-arrow-icon { font-size: 20px; color: var(--accent2); }
-.redis-qty { font-size: 12px; font-weight: 700; color: var(--accent2); font-family: 'DM Mono', monospace; }
+.redis-qty { font-size: 12px; font-weight: 700; color: var(--accent2); font-family: var(--font-mono); }
 
 /* Toggle */
 .toggle { width: 44px; height: 24px; background: var(--border); border-radius: 12px; position: relative; cursor: pointer; transition: background 0.2s; flex-shrink: 0; border: none; }

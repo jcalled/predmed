@@ -27,12 +27,12 @@ logger = logging.getLogger("main")
 from database import (
     get_db, init_db, SessionLocal,
     Usuario, Tenant, PacienteFila, CapacidadeHospital,
-    ConfigVagas, Transferencia
+    ConfigVagas, Transferencia, HospitalCirMap
 )
 from config import get_cors_origins
 from auth import (
     hash_password, verify_password, create_token,
-    get_current_user, require_sesa
+    get_current_user, require_sesa, require_gestor
 )
 from services.ia_engine import (
     get_dashboard_kpis, get_hospitais_pressao,
@@ -40,6 +40,7 @@ from services.ia_engine import (
     pressao_status, VALOR_AIH_SIMULADO
 )
 from services.data_import import import_integrasus, import_datasus, ImportacaoInvalida
+from services.priorizacao import VERSAO_REGRAS, calcular_score, dias_desde, eh_oncologico
 
 from services.previsoes import (
     get_previsoes, get_previsoes_todas_especialidades,
@@ -89,6 +90,7 @@ async def lifespan(app: FastAPI):
 # ─── App ──────────────────────────────────────────────────
 # app = FastAPI(title="PREDMED API", version="1.0.0", lifespan=lifespan)
 app = FastAPI(title="PREDMED API", version="1.0.0") # Sem retreino
+from routers import coleta as _router_coleta; app.include_router(_router_coleta.router)  # noqa: E402,E702
 
 app.add_middleware(
     CORSMiddleware,
@@ -242,6 +244,20 @@ def _mascara_iniciais(db: Session, user: Usuario):
     return lambda p: p.iniciais if chave and chave in (p.hospital_nome or "").upper() else None
 
 
+def _data_referencia() -> date:
+    """Hoje. A fila é coletada 2x/dia, então a espera é contada até a data atual."""
+    return date.today()
+
+
+def _dias_espera(data_insercao: Optional[str]) -> Optional[int]:
+    if not data_insercao:
+        return None
+    try:
+        return (_data_referencia() - date.fromisoformat(data_insercao[:10])).days
+    except ValueError:
+        return None
+
+
 # ─── FILA CIRÚRGICA ───────────────────────────────────────
 @app.get("/fila")
 def fila(
@@ -284,11 +300,21 @@ def fila(
          "Categoria C": 3, "Categoria D": 4},
         value=PacienteFila.classif_swalis, else_=5
     )
-    rows = q.order_by(swalis_order).offset((page - 1) * limit).limit(limit).all()
+    # Dentro da mesma categoria SWALIS, quem espera há mais tempo vem primeiro
+    rows = q.order_by(swalis_order, PacienteFila.data_insercao.asc()) \
+        .offset((page - 1) * limit).limit(limit).all()
 
+    # Mediana só com datas confiáveis (numerações atuais)
+    datas = sorted(d for (d,) in escopo.with_entities(PacienteFila.data_insercao)
+                   .filter(PacienteFila.data_insercao.isnot(None),
+                           PacienteFila.data_confiavel.isnot(False)).all())
     stats = {
         "total": total,
         "total_escopo_agregado": escopo.count(),
+        # Espera medida desde a data da solicitação informada pelo IntegraSUS
+        "espera_mediana_dias": _dias_espera(datas[len(datas) // 2]) if datas else None,
+        "datas_a_confirmar": escopo.filter(PacienteFila.data_confiavel.is_(False)).count(),
+        "data_referencia": _data_referencia(),
         "a1": escopo.filter(PacienteFila.classif_swalis == "Categoria A1").count(),
         "judicializados": escopo.filter(PacienteFila.judicializado == True).count(),
         "especialidades": [
@@ -315,6 +341,8 @@ def fila(
                 "judicializado": r.judicializado,
                 "procedimento": r.procedimento,
                 "data_insercao": r.data_insercao,
+                "dias_espera": _dias_espera(r.data_insercao),
+                "data_confiavel": r.data_confiavel,
             }
             for r in rows
         ]
@@ -345,25 +373,67 @@ def hospitais(
 
 
 # ─── REDISTRIBUIÇÃO ───────────────────────────────────────
+def _cir_do_tenant(db: Session, user: Usuario) -> Optional[str]:
+    tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id).first() if user.tenant_id else None
+    return tenant.cir if tenant and tenant.cir else None
+
+
+def _cir_do_hospital(db: Session, hospital_nome: str) -> Optional[str]:
+    """CIR do estabelecimento, na mesma ordem usada pelas sugestões (redistribuicao-v1):
+    1) CNES do vínculo da fila (hospital_alias) → município do CNES; 2) nome fantasia CNES;
+    3) tenant (vagas declaradas); 4) HospitalCirMap (residência dos pacientes, legado)."""
+    from database import HospitalAlias, CnesCapacidade
+    comp = db.query(func.max(CnesCapacidade.competencia)).scalar()
+    alias = db.query(HospitalAlias).filter(HospitalAlias.alias_nome == hospital_nome,
+                                           HospitalAlias.cnes.isnot(None)).first()
+    cap = None
+    if comp and alias:
+        cap = db.query(CnesCapacidade).filter(CnesCapacidade.competencia == comp,
+                                              CnesCapacidade.cnes == alias.cnes).first()
+    if comp and cap is None:
+        caps = db.query(CnesCapacidade).filter(CnesCapacidade.competencia == comp,
+                                               CnesCapacidade.nome_fantasia == hospital_nome).limit(2).all()
+        cap = caps[0] if len(caps) == 1 else None
+    if cap is not None and cap.cir_ads_predmed:
+        return cap.cir_ads_predmed
+    t = db.query(Tenant).filter(Tenant.nome == hospital_nome, Tenant.tipo == "hospital_particular").first()
+    if t and t.cir:
+        return t.cir
+    m = db.query(HospitalCirMap).filter(HospitalCirMap.hospital_nome == hospital_nome).first()
+    return m.cir if m else None
+
+
 @app.get("/redistribuicao")
 def redistribuicao(
+    cir: Optional[str] = None,
     user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # data = get_redistribuicao_sugestoes(db)
-    data = get_redistribuicao_sugestoes(db)  # ← MODIFICADO
+    # Redistribuição v1 (docs/dados/redistribuicao-v1.md): mesma CIR, capacidade ESTIMADA
+    # (CNES + produção SIH por CNES) ou declarada (vagas SUS do hospital particular).
+    data = get_redistribuicao_sugestoes(db, cir_filter=cir or None)
 
-    # particular e hospital_publico veem, mas SÓ SESA pode aprovar
-    data["pode_aprovar"] = user.role == "sesa"
+    # SESA aprova em todo o estado; SMS aprova transferências da própria CIR
+    # (decisão de 29/09/2026). Hospitais só leem.
+    data["pode_aprovar"] = user.role in ("sesa", "sms")
+    data["escopo_aprovacao"] = "estado" if user.role == "sesa" else (
+        _cir_do_tenant(db, user) if user.role == "sms" else None)
     return data
 
 
 @app.post("/redistribuicao/aprovar")
 def aprovar_redistribuicao(
     data: AprovacaoInput,
-    user: Usuario = Depends(require_sesa),
+    user: Usuario = Depends(require_gestor),
     db: Session = Depends(get_db)
 ):
+    if user.role == "sms":
+        cir = _cir_do_tenant(db, user)
+        cir_origem = _cir_do_hospital(db, data.hospital_origem)
+        cir_destino = _cir_do_hospital(db, data.hospital_destino)
+        if not cir or cir_origem != cir or cir_destino != cir:
+            raise HTTPException(403, "A SMS aprova apenas transferências entre hospitais da própria CIR")
+
     # Verifica vagas se destino for particular
     if data.tenant_destino_id:
         vagas = get_vagas_status_tenant(db, data.tenant_destino_id)
@@ -529,20 +599,50 @@ def upload_datasus(
 
 
 # ─── PRIORIZACAO ──────────────────────────────────────────
+LIMITE_JUDICIALIZADOS = 1000  # teto de linhas com o filtro de judicializados
+
+
 @app.get("/priorizacao")
 def priorizacao(
+    limit: int = 50,
+    especialidade: Optional[str] = None,
+    apenas_oncologia: bool = False,
+    apenas_judicializados: bool = False,
     user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    from sqlalchemy import case
-    swalis_order = case(
-        {"Categoria A1": 0, "Categoria A2": 1, "Categoria B": 2,
-         "Categoria C": 3, "Categoria D": 4},
-        value=PacienteFila.classif_swalis, else_=5
-    )
+    """Fila ordenada pelo score explicável (services/priorizacao.py, regras v0.1).
+
+    `apenas_judicializados` filtra na query (antes do score), mantendo o escopo do
+    perfil; o teto de linhas sobe para LIMITE_JUDICIALIZADOS para vir completo."""
+    teto = LIMITE_JUDICIALIZADOS if apenas_judicializados else 200
+    limit = max(1, min(limit, teto))
+    hoje = _data_referencia()
     iniciais = _mascara_iniciais(db, user)
-    top = _escopo_linhas_compartilhadas(db.query(PacienteFila), db, user) \
-        .order_by(swalis_order).limit(20).all()
+
+    q = _escopo_linhas_compartilhadas(db.query(PacienteFila), db, user).with_entities(
+        PacienteFila.id, PacienteFila.iniciais, PacienteFila.hospital_nome,
+        PacienteFila.municipio, PacienteFila.especialidade, PacienteFila.classif_swalis,
+        PacienteFila.judicializado, PacienteFila.procedimento,
+        PacienteFila.data_insercao, PacienteFila.data_confiavel,
+    )
+    if especialidade:
+        q = q.filter(PacienteFila.especialidade.ilike(f"%{especialidade}%"))
+    if apenas_judicializados:
+        q = q.filter(PacienteFila.judicializado == True)  # noqa: E712
+
+    avaliados = []
+    for p in q.all():
+        if apenas_oncologia and not eh_oncologico(p.especialidade, p.procedimento):
+            continue
+        r = calcular_score(
+            classif_swalis=p.classif_swalis, data_insercao=p.data_insercao,
+            data_confiavel=p.data_confiavel, judicializado=bool(p.judicializado),
+            especialidade=p.especialidade, procedimento=p.procedimento, hoje=hoje,
+        )
+        avaliados.append((r.score, dias_desde(p.data_insercao, hoje) or 0, p, r))
+    # Desempate: maior espera primeiro
+    avaliados.sort(key=lambda t: (t[0], t[1]), reverse=True)
 
     # Distribuição SWALIS é agregada: estado inteiro para todos os perfis
     dist = db.query(
@@ -551,21 +651,31 @@ def priorizacao(
     ).group_by(PacienteFila.classif_swalis).all()
 
     return {
+        "versao_regras": VERSAO_REGRAS,
+        "data_referencia": hoje,
+        "total_avaliados": len(avaliados),
+        "resumo": {
+            "score_70_ou_mais": sum(1 for t in avaliados if t[0] >= 70),
+            "oncologia_acima_60_dias": sum(
+                1 for t in avaliados if any("Oncologia com mais" in a for a in t[3].alertas)),
+            "datas_a_confirmar": sum(1 for t in avaliados if t[2].data_confiavel is False),
+        },
         "top_prioritarios": [
             {
                 "id": p.id, "iniciais": iniciais(p),
                 "hospital_nome": p.hospital_nome,
+                "municipio": p.municipio,
                 "especialidade": p.especialidade,
                 "classif_swalis": p.classif_swalis,
                 "judicializado": p.judicializado,
                 "procedimento": p.procedimento,
-                "score_ia": 100 - ["Categoria A1", "Categoria A2", "Categoria B",
-                                    "Categoria C", "Categoria D"].index(
-                                        p.classif_swalis) * 20 if p.classif_swalis in [
-                                        "Categoria A1", "Categoria A2", "Categoria B",
-                                        "Categoria C", "Categoria D"] else 0,
+                "dias_espera": dias,
+                "data_confiavel": p.data_confiavel,
+                "score": score,
+                "componentes": r.componentes,
+                "alertas": r.alertas,
             }
-            for p in top
+            for score, dias, p, r in avaliados[:limit]
         ],
         "distribuicao_swalis": {row[0]: row[1] for row in dist},
     }
@@ -635,6 +745,31 @@ def previsoes(
     """
     horizonte = min(max(horizonte, 1), 12)
     return get_previsoes(db, especialidade=especialidade, n_future=horizonte)
+
+
+@app.get("/previsoes/producao")
+def previsoes_producao(
+    especialidade: Optional[str] = None,
+    carater: str = "TODOS",
+    user: Usuario = Depends(get_current_user),
+):
+    """
+    Previsão ESTIMADA da produção cirúrgica SIH (não da fila) em 30/60/90 dias, com intervalo
+    empírico de 80% e o MAPE fora da amostra do modelo validado (avaliação versionada).
+    Fonte: backend/avaliacoes/previsao_demanda/previsao_producao_*.json. carater: TODOS | ELETIVO.
+    """
+    from services.previsao_producao import previsao_producao_para_api
+    return previsao_producao_para_api(especialidade, carater)
+
+
+@app.get("/previsoes/producao/resumo")
+def previsoes_producao_resumo(
+    carater: str = "TODOS",
+    user: Usuario = Depends(get_current_user),
+):
+    """Previsão 30/60/90 dias por especialidade (produção SIH), com o MAPE do teste."""
+    from services.previsao_producao import resumo_producao_para_api
+    return resumo_producao_para_api(carater)
 
 
 @app.get("/previsoes/todas")
@@ -707,72 +842,63 @@ def previsoes_ml_todas(
 # ─── ZERAR FILAS ──────────────────────────────────────────
 @app.get("/zerarfilas")
 def zerar_filas(
+    horizonte_meses: int = 3,
     user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
-    Módulo Programa Zerar Filas:
-    Combina previsões + redistribuição para calcular plano de eliminação da fila.
+    Simulação de mutirão (ex-Programa Zerar Filas) — cenário SIMULADO.
+    Repete por `horizonte_meses` (1–6, padrão 3 ≈ 90 dias) as sugestões mensais da
+    redistribuição v1 (mesma CIR, capacidade estimada CNES + SIH), limitado ao excedente de
+    cada origem. Hipótese explícita: sem série de entradas na fila, a fila sem ação é
+    considerada estável. Garantias: redistribuíveis ≤ fila e redução entre 0 e 100%.
     """
-    todas = get_previsoes_todas_especialidades(db)
+    from services.redistribuicao import plano_mutirao, especialidade_serie
+    horizonte_meses = min(max(horizonte_meses, 1), 6)
     redistrib = get_redistribuicao_sugestoes(db)
 
+    fila_esp: dict = {}
+    for esp, n in db.query(PacienteFila.especialidade, func.count(PacienteFila.id)) \
+            .group_by(PacienteFila.especialidade).all():
+        e = especialidade_serie(esp) if esp else "SEM ESPECIALIDADE"
+        fila_esp[e] = fila_esp.get(e, 0) + n
+
+    cen = plano_mutirao(fila_esp, redistrib["sugestoes"], horizonte_meses=horizonte_meses)
     plano = []
-    for esp in todas["por_especialidade"]:
-        nome = esp["especialidade"]
-        fila_atual = esp["fila_atual"]
-        fila_6m_sem = esp["fila_proj_6m"]
-        espera_meses = ESPERA_MEDIA_ESP.get(nome, 5.2)
-
-        # Pacientes redistribuíveis nesta especialidade
-        redistrib_esp = sum(
-            s["qtd_sugerida"] for s in redistrib["sugestoes"]
-            if s["especialidade"].upper() == nome
-        )
-
-        fila_6m_com = max(0, fila_6m_sem - redistrib_esp)
-        reducao_pct = round((fila_6m_sem - fila_6m_com) / max(fila_6m_sem, 1) * 100, 1)
-        meses_zeramento = round(fila_6m_com / max(fila_atual / espera_meses, 1)) if fila_atual > 0 else 0
-
+    for p in cen["plano"]:
         plano.append({
-            "especialidade": nome,
-            "fila_atual": fila_atual,
-            "fila_6m_sem_acao": fila_6m_sem,
-            "fila_6m_com_redistrib": fila_6m_com,
-            "pacientes_redistribuiveis": redistrib_esp,
-            "reducao_redistrib_pct": reducao_pct,
-            "espera_media_meses": espera_meses,
-            "meses_para_zeramento": meses_zeramento,
-            "aih_estimada_redistrib": redistrib_esp * VALOR_AIH_SIMULADO,
-            "espera_media_origem": ESPERA_MEDIA_ORIGEM,
-            "urgencia": esp["urgencia"],
-            "tendencia": esp["tendencia"],
+            **p,
+            "aih_estimada_redistrib": p["pacientes_redistribuiveis"] * VALOR_AIH_SIMULADO,
+            "aih_estimada_origem": "simulado",
         })
-
-    plano.sort(key=lambda x: x["fila_atual"], reverse=True)
-
-    total_redistribuiveis = sum(p["pacientes_redistribuiveis"] for p in plano)
-    total_aih = sum(p["aih_estimada_redistrib"] for p in plano)
-    fila_total_atual = todas["total"].get("fila_atual", 0)
-    fila_total_6m_sem = todas["total"].get("fila_proj_6m", 0)
-    fila_total_6m_com = max(0, fila_total_6m_sem - total_redistribuiveis)
 
     return {
         "resumo": {
-            "fila_total_atual": fila_total_atual,
-            "fila_total_6m_sem_acao": fila_total_6m_sem,
-            "fila_total_6m_com_redistrib": fila_total_6m_com,
-            "total_pacientes_redistribuiveis": total_redistribuiveis,
-            "total_aih_estimada": total_aih,
+            "horizonte_meses": horizonte_meses,
+            "horizonte_dias": horizonte_meses * 30,
+            "fila_total_atual": cen["fila_total_atual"],
+            "fila_total_sem_acao": cen["fila_total_atual"],
+            "fila_total_com_redistribuicao": cen["fila_total_com_redistribuicao"],
+            "total_pacientes_redistribuiveis": cen["total_pacientes_redistribuiveis"],
+            "redistribuiveis_por_mes": redistrib["total_redistribuiveis"],
+            "total_aih_estimada": cen["total_pacientes_redistribuiveis"] * VALOR_AIH_SIMULADO,
             "aih_estimada_origem": "simulado",
-            "reducao_total_pct": round(
-                (fila_total_6m_sem - fila_total_6m_com) / max(fila_total_6m_sem, 1) * 100, 1
-            ),
+            "reducao_total_pct": cen["reducao_total_pct"],
+            "hospitais_com_ociosidade": redistrib["hospitais_com_ociosidade"],
         },
         "plano_por_especialidade": plano,
         "sugestoes_redistribuicao": redistrib["sugestoes"],
         "origem": "simulado",
-        "aviso": "Plano simulado: série histórica estimada, espera média e valor de AIH são parâmetros fixos não validados.",
+        "natureza": "simulado",
+        "hipoteses": [
+            f"As sugestões mensais da redistribuição (capacidade estimada) se repetem por {horizonte_meses} meses.",
+            "Cada origem transfere no máximo o excedente acima de 1,5 mês da própria produção na especialidade.",
+            "Fila sem ação considerada estável (entradas = saídas): não há série observada de entradas na fila.",
+            "Valor por AIH fixo de R$ 1.500 (simulado, não é valor pago).",
+        ],
+        "metodologia": redistrib["metodologia"],
+        "aviso": ("Cenário simulado: usa ociosidade estimada (CNES + SIH), não vagas confirmadas; a fila "
+                  "sem ação é suposta estável e o valor de AIH é fixo. Não é resultado medido."),
         "gerado_em": datetime.now().isoformat(),
     }
 
@@ -860,15 +986,17 @@ def analytics_simulador_receita(
 def analytics_validacao_mape(
     especialidade: Optional[str] = None,
     meses: int = 6,
+    carater: str = "TODOS",
     user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
-    MAPE calculado: compara previsão do modelo vs dados SIH realizados.
-    Meta do projeto (proposta Centelha): MAPE < 15%.
+    MAPE fora da amostra: previsão vs produção cirúrgica realizada no SIH (avaliação
+    versionada em backend/avaliacoes/previsao_demanda; relatório docs/dados/previsao-demanda-v1.md).
+    Meta do projeto (proposta Centelha): MAPE < 15%. carater: TODOS | ELETIVO.
     """
     from services.analytics_sih import get_validacao_mape
-    return get_validacao_mape(db, especialidade=especialidade, meses_validacao=meses)
+    return get_validacao_mape(db, especialidade=especialidade, meses_validacao=meses, carater=carater)
 
 
 @app.get("/analytics/espera-media")

@@ -1,141 +1,214 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useAuth } from '@/lib/auth'
+import { useEffect, useRef } from 'react'
 import clsx from 'clsx'
+import {
+  LayoutDashboard, ListOrdered, Target, Map as MapIcon, TrendingUp, HandCoins,
+  FileText, Settings, LogOut, X, MapPin, Check, Minus,
+  type LucideIcon,
+} from 'lucide-react'
+import { useAuth, type UserRole } from '@/lib/auth'
+import Wordmark from '@/components/marca/Wordmark'
 
 interface NavItem {
   href: string
-  icon: string
+  Icone: LucideIcon
   label: string
-  roles?: string[]  // se definido, só aparece para esses roles
+  roles?: UserRole[]  // se definido, só aparece para esses roles
 }
 
+/*
+ * Menu por perfil — docs/ux/arquitetura-telas.md (aprovada em 29/09/2026).
+ * SESA/SMS: 7 itens · hospital público: 6 · hospital particular: 8.
+ * Esconder o item é só organização de tela: quem garante o acesso é o backend.
+ */
 const NAV_ITEMS: NavItem[] = [
-  { href: '/dashboard',                  icon: '📊', label: 'Dashboard' },
-  { href: '/dashboard/fila',             icon: '🗂',  label: 'Fila Cirúrgica' },
-  { href: '/dashboard/priorizacao',      icon: '🎯', label: 'Priorização' },
-  { href: '/dashboard/redistribuicao',   icon: '🗺️',  label: 'Redistribuição' },
-  { href: '/dashboard/previsoes',        icon: '📈', label: 'Previsões' },
-  {
-    label: 'Previsões ML',
-    href: '/dashboard/previsoes-ml',
-    icon: '📈',
-    roles: ['sesa', 'sms', 'hospital_publico', 'hospital_particular']
-  },
-  { href: '/dashboard/hospitais',        icon: '🏥', label: 'Hospitais' },
-  { href: '/dashboard/judicializados',   icon: '⚖️',  label: 'Judicializados' },
-  { href: '/dashboard/zerarfilas',       icon: '🚀', label: 'Prog. Zerar Filas', roles: ['sesa', 'sms'] },
-  { href: '/dashboard/relatorios',       icon: '📄', label: 'Relatórios' },
-  { href: '/dashboard/configuracoes',    icon: '⚙️',  label: 'Configurações', roles: ['hospital_particular', 'sesa', 'sms'] },
+  { href: '/dashboard',                Icone: LayoutDashboard, label: 'Painel' },
+  { href: '/dashboard/fila',           Icone: ListOrdered,     label: 'Fila cirúrgica' },
+  { href: '/dashboard/priorizacao',    Icone: Target,          label: 'Priorização' },
+  { href: '/dashboard/previsoes',      Icone: TrendingUp,      label: 'Previsão de demanda' },
+  { href: '/dashboard/redistribuicao', Icone: MapIcon,         label: 'Redistribuição' },
+  { href: '/dashboard/oportunidades',  Icone: HandCoins,       label: 'Oportunidades SUS', roles: ['hospital_particular'] },
+  { href: '/dashboard/relatorios',     Icone: FileText,        label: 'Relatórios' },
+  { href: '/dashboard/configuracoes',  Icone: Settings,        label: 'Configurações', roles: ['sesa', 'sms', 'hospital_particular'] },
 ]
 
-const ROLE_LABELS: Record<string, { label: string; color: string; icon: string }> = {
-  sesa:               { label: 'SESA — Gestor Estadual',    color: 'var(--accent)',  icon: '🏛️' },
-  sms:                { label: 'SMS — Gestor Municipal',     color: 'var(--accent3)', icon: '🏙️' },
-  hospital_publico:   { label: 'Hospital Público',           color: 'var(--accent2)', icon: '🏥' },
-  hospital_particular:{ label: 'Hospital Particular',        color: 'var(--yellow)',  icon: '🏢' },
+/** Perfis que podem abrir cada rota restrita (usado também pelas telas). */
+export function podeAcessar(href: string, role?: string | null) {
+  const item = NAV_ITEMS.find(i => i.href === href)
+  return !item?.roles || item.roles.includes(role as UserRole)
 }
 
-export default function Sidebar() {
-  const { user, logout, isSesa, isSms, isGestor, isPublico, isParticular } = useAuth()
+const ROLE_LABELS: Record<string, { label: string; color: string; rgb: string }> = {
+  sesa:                { label: 'SESA — Gestor Estadual', color: 'var(--accent)',  rgb: '0,194,255' },
+  sms:                 { label: 'SMS — Gestor Municipal', color: 'var(--accent3)', rgb: '255,107,53' },
+  hospital_publico:    { label: 'Hospital Público',       color: 'var(--accent2)', rgb: '0,255,157' },
+  hospital_particular: { label: 'Hospital Particular',    color: 'var(--yellow)',  rgb: '255,215,0' },
+}
+
+interface SidebarProps {
+  /** Em telas < lg a barra vira gaveta (drawer). */
+  aberta: boolean
+  aoFechar: () => void
+}
+
+const SELETOR_FOCAVEL = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
+export default function Sidebar({ aberta, aoFechar }: SidebarProps) {
+  const { user, logout, isSesa, isSms, isParticular } = useAuth()
   const pathname = usePathname()
+  const ref = useRef<HTMLElement>(null)
+  const botaoFecharRef = useRef<HTMLButtonElement>(null)
 
   const roleInfo = ROLE_LABELS[user?.role || ''] || ROLE_LABELS.sesa
+  const visibleItems = NAV_ITEMS.filter(item => podeAcessar(item.href, user?.role))
 
-  const visibleItems = NAV_ITEMS.filter(item =>
-    !item.roles || item.roles.includes(user?.role || '')
-  )
+  // Gaveta: foco inicial no botão fechar, Esc fecha, Tab fica preso dentro.
+  useEffect(() => {
+    if (!aberta) return
+    botaoFecharRef.current?.focus()
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { e.preventDefault(); aoFechar(); return }
+      if (e.key !== 'Tab' || !ref.current) return
+      const focaveis = Array.from(ref.current.querySelectorAll<HTMLElement>(SELETOR_FOCAVEL))
+        .filter(el => el.offsetParent !== null)
+      if (focaveis.length === 0) return
+      const primeiro = focaveis[0]
+      const ultimo = focaveis[focaveis.length - 1]
+      if (e.shiftKey && document.activeElement === primeiro) { e.preventDefault(); ultimo.focus() }
+      else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primeiro.focus() }
+    }
+    document.addEventListener('keydown', onKey)
+    const overflowAnterior = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = overflowAnterior
+    }
+  }, [aberta, aoFechar])
+
+  // Espelha as regras do backend: aprovar = SESA (estado) ou SMS (própria CIR,
+  // decisão D11); importar exige SESA (require_sesa).
+  const permissoes = [
+    { ok: isSesa || isSms, texto: isSesa ? 'Aprovar redistribuições (estado)' : isSms ? 'Aprovar redistribuições (sua CIR)' : 'Aprovar redistribuições' },
+    { ok: isParticular, texto: 'Configurar vagas SUS' },
+    { ok: isSesa, texto: 'Importar dados' },
+  ]
 
   return (
-    <aside className="fixed left-0 top-0 h-full w-60 flex flex-col z-40" style={{ background: 'var(--surface)', borderRight: '1px solid var(--border)' }}>
-      {/* Logo */}
-      <div className="px-5 py-5 border-b" style={{ borderColor: 'var(--border)' }}>
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0" style={{ background: 'rgba(0,194,255,0.1)', border: '1px solid rgba(0,194,255,0.2)' }}>
-            🧠
-          </div>
-          <div>
-            <div className="text-base font-bold tracking-tight">PREDMED</div>
-            <div className="text-xs" style={{ color: 'var(--text2)' }}>eKLICK Healthcare AI</div>
-          </div>
-        </div>
-      </div>
+    <>
+      {/* Fundo escurecido da gaveta (só < lg) */}
+      <div
+        className={clsx('fixed inset-0 z-40 bg-black/60 lg:hidden transition-opacity', aberta ? 'opacity-100' : 'opacity-0 pointer-events-none')}
+        aria-hidden="true"
+        onClick={aoFechar}
+      />
 
-      {/* Perfil */}
-      <div className="px-4 py-3 border-b" style={{ borderColor: 'var(--border)', background: 'rgba(0,0,0,0.15)' }}>
-        <div className="flex items-center gap-2 mb-1">
-          <span style={{ color: roleInfo.color }}>{roleInfo.icon}</span>
-          <span className="text-xs font-semibold" style={{ color: roleInfo.color }}>{roleInfo.label}</span>
-        </div>
-        <div className="text-xs font-medium text-text1 truncate">{user?.nome}</div>
-        <div className="text-xs truncate" style={{ color: 'var(--text2)' }}>{user?.tenant_nome}</div>
-        {user?.tenant_cir && (
-          <div className="text-xs mt-1 font-mono" style={{ color: 'var(--text2)', fontSize: 10 }}>📍 {user.tenant_cir}</div>
+      <aside
+        ref={ref}
+        id="menu-principal"
+        aria-label="Menu principal"
+        {...(aberta ? { role: 'dialog', 'aria-modal': true } : {})}
+        className={clsx(
+          'fixed left-0 top-0 h-full w-sidebar max-w-[85vw] flex flex-col z-50 transition-transform duration-200',
+          'lg:translate-x-0 lg:z-30',
+          aberta ? 'translate-x-0' : '-translate-x-full invisible lg:visible',
         )}
-      </div>
-
-      {/* Navegação */}
-      <nav className="flex-1 py-3 overflow-y-auto">
-        {visibleItems.map((item) => {
-          const active = pathname === item.href
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={clsx(
-                'flex items-center gap-3 px-4 py-2.5 mx-2 rounded-lg text-sm transition-all mb-0.5',
-                active ? 'font-semibold' : 'hover:bg-white/5'
-              )}
-              style={active ? {
-                background: `rgba(${roleInfo.color === 'var(--accent)' ? '0,194,255' : roleInfo.color === 'var(--accent3)' ? '255,102,0' : '0,255,136'},0.1)`,
-                color: roleInfo.color,
-                border: `1px solid ${roleInfo.color === 'var(--accent)' ? 'rgba(0,194,255,0.2)' : 'rgba(255,255,255,0.1)'}`,
-              } : { color: 'var(--text2)' }}
-            >
-              <span className="text-base">{item.icon}</span>
-              <span>{item.label}</span>
-            </Link>
-          )
-        })}
-      </nav>
-
-      {/* Permissões do role */}
-      <div className="px-4 py-3 border-t" style={{ borderColor: 'var(--border)' }}>
-        <div className="text-xs mb-2" style={{ color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-          Permissões
+        style={{ background: 'var(--surface)', borderRight: '1px solid var(--border)' }}
+      >
+        {/* Marca */}
+        <div className="px-5 py-4 border-b flex items-center justify-between" style={{ borderColor: 'var(--border)' }}>
+          <Link href="/dashboard" aria-label="PREDMED por MedOps — página inicial" className="rounded-md">
+            <Wordmark />
+          </Link>
+          <button
+            ref={botaoFecharRef}
+            type="button"
+            className="lg:hidden p-2 -mr-2 rounded-md"
+            style={{ color: 'var(--text2)' }}
+            onClick={aoFechar}
+            aria-label="Fechar menu"
+          >
+            <X size={20} aria-hidden="true" />
+          </button>
         </div>
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs" style={{ color: isGestor ? 'var(--accent2)' : 'var(--text2)' }}>
-            <span>{isGestor ? '✅' : '⬜'}</span>
-            {isSesa ? 'Aprovar transferências (global)' : isSms ? 'Aprovar na sua CIR' : 'Aprovar transferências'}
-          </div>
-          <div className="flex items-center gap-2 text-xs" style={{ color: isParticular ? 'var(--accent2)' : 'var(--text2)' }}>
-            <span>{isParticular ? '✅' : '⬜'}</span> Configurar vagas SUS
-          </div>
-          <div className="flex items-center gap-2 text-xs" style={{ color: isGestor ? 'var(--accent2)' : 'var(--text2)' }}>
-            <span>{isGestor ? '✅' : '⬜'}</span> Importar dados
-          </div>
-          {isSms && (
-            <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--accent3)' }}>
-              <span>📍</span> Escopo: CIR {user?.tenant_cir?.replace('CIR ', '')}
+
+        {/* Perfil */}
+        <div className="px-4 py-3 border-b" style={{ borderColor: 'var(--border)', background: 'rgba(0,0,0,0.15)' }}>
+          <div className="text-xs font-semibold mb-1" style={{ color: roleInfo.color }}>{roleInfo.label}</div>
+          <div className="text-xs font-medium text-text1 truncate">{user?.nome}</div>
+          <div className="text-xs truncate" style={{ color: 'var(--text2)' }}>{user?.tenant_nome}</div>
+          {user?.tenant_cir && (
+            <div className="text-2xs mt-1 font-mono flex items-center gap-1" style={{ color: 'var(--text2)' }}>
+              <MapPin size={11} aria-hidden="true" /> {user.tenant_cir}
             </div>
           )}
         </div>
-      </div>
 
-      {/* Logout */}
-      <div className="px-4 py-3 border-t" style={{ borderColor: 'var(--border)' }}>
-        <button
-          onClick={logout}
-          className="w-full text-left text-sm py-2 px-3 rounded-lg transition-all"
-          style={{ color: 'var(--text2)' }}
-          onMouseEnter={e => (e.currentTarget.style.color = 'var(--red)')}
-          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text2)')}
-        >
-          ↪ Sair
-        </button>
-      </div>
-    </aside>
+        {/* Navegação */}
+        <nav className="flex-1 py-3 overflow-y-auto" aria-label="Seções">
+          <ul>
+            {visibleItems.map(({ href, Icone, label }) => {
+              const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(`${href}/`))
+              return (
+                <li key={href}>
+                  <Link
+                    href={href}
+                    onClick={aoFechar}
+                    aria-current={active ? 'page' : undefined}
+                    className={clsx(
+                      'flex items-center gap-3 px-4 py-2.5 mx-2 rounded-lg text-sm transition-colors mb-0.5 border',
+                      active ? 'font-semibold' : 'border-transparent hover:bg-white/5 hover:text-text1',
+                    )}
+                    style={active ? {
+                      background: `rgba(${roleInfo.rgb},0.1)`,
+                      color: roleInfo.color,
+                      borderColor: `rgba(${roleInfo.rgb},0.3)`,
+                    } : { color: 'var(--text2)' }}
+                  >
+                    <Icone size={18} aria-hidden="true" className="flex-shrink-0" />
+                    <span>{label}</span>
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+        </nav>
+
+        {/* Permissões do perfil */}
+        <div className="px-4 py-3 border-t" style={{ borderColor: 'var(--border)' }}>
+          <div className="text-2xs mb-2 uppercase" style={{ color: 'var(--text2)', letterSpacing: '0.5px' }} id="titulo-permissoes">
+            Permissões
+          </div>
+          <ul className="space-y-1" aria-labelledby="titulo-permissoes">
+            {permissoes.map(p => (
+              <li key={p.texto} className="flex items-center gap-2 text-xs" style={{ color: p.ok ? 'var(--accent2)' : 'var(--text2)' }}>
+                {p.ok ? <Check size={13} aria-hidden="true" /> : <Minus size={13} aria-hidden="true" />}
+                <span className="sr-only">{p.ok ? 'Permitido:' : 'Não permitido:'}</span>
+                {p.texto}
+              </li>
+            ))}
+            {isSms && (
+              <li className="flex items-center gap-2 text-xs" style={{ color: 'var(--accent3)' }}>
+                <MapPin size={13} aria-hidden="true" /> Escopo: CIR {user?.tenant_cir?.replace('CIR ', '')}
+              </li>
+            )}
+          </ul>
+        </div>
+
+        {/* Sair */}
+        <div className="px-4 py-3 border-t" style={{ borderColor: 'var(--border)' }}>
+          <button
+            type="button"
+            onClick={logout}
+            className="w-full flex items-center gap-2 text-left text-sm py-2 px-3 rounded-lg transition-colors hover:bg-white/5 hover:text-red"
+            style={{ color: 'var(--text2)' }}
+          >
+            <LogOut size={16} aria-hidden="true" /> Sair
+          </button>
+        </div>
+      </aside>
+    </>
   )
 }

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Coleta mensal DATASUS (CNES + SIH-RD CE) no Mac do desenvolvedor (provisório até a AWS).
+     Roda nos dias 10 e 25, às 4h: o SIH-RD sai por volta do dia 7-10 e o CNES/TAB_CNES por volta
+     do dia 15. O script é idempotente (só baixa o que falta ou mudou), então a 2ª execução do mês
+     normalmente só confirma. Instalação: ver docs/dados/datasus-cnes-sih.md (NÃO instalado). -->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>br.predmed.coleta-datasus</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/juniormarcal/MedOps/predmed-mvp/backend/venv/bin/python</string>
+    <string>/Users/juniormarcal/MedOps/predmed-mvp/backend/_SCRIPTS/coleta_datasus.py</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict><key>Day</key><integer>10</integer><key>Hour</key><integer>4</integer><key>Minute</key><integer>0</integer></dict>
+    <dict><key>Day</key><integer>25</integer><key>Hour</key><integer>4</integer><key>Minute</key><integer>0</integer></dict>
+  </array>
+  <key>StandardOutPath</key>
+  <string>/Users/juniormarcal/PredmedDados/logs/coleta-datasus.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/juniormarcal/PredmedDados/logs/coleta-datasus.log</string>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>LowPriorityIO</key>
+  <true/>
+</dict>
+</plist>
