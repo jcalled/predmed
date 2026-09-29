@@ -91,6 +91,7 @@ async def lifespan(app: FastAPI):
 # app = FastAPI(title="PREDMED API", version="1.0.0", lifespan=lifespan)
 app = FastAPI(title="PREDMED API", version="1.0.0") # Sem retreino
 from routers import coleta as _router_coleta; app.include_router(_router_coleta.router)  # noqa: E402,E702
+from routers import meta40 as _router_meta40; app.include_router(_router_meta40.router)  # noqa: E402,E702
 
 app.add_middleware(
     CORSMiddleware,
