@@ -218,11 +218,15 @@ def carregar_avaliacao_atual(pasta: str = PASTA_AVALIACOES) -> Optional[Dict]:
     if not caminho:
         return None
     chave = f"{caminho}:{os.path.getmtime(caminho)}"
-    if chave not in _CACHE:
+    # Lê em variável local: requisições simultâneas (threads) não podem
+    # perder a entrada entre o clear() de uma e o acesso de outra.
+    avaliacao = _CACHE.get(chave)
+    if avaliacao is None:
         with open(caminho, encoding="utf-8") as f:
-            _CACHE.clear()
-            _CACHE[chave] = json.load(f)
-    return _CACHE[chave]
+            avaliacao = json.load(f)
+        _CACHE.clear()
+        _CACHE[chave] = avaliacao
+    return avaliacao
 
 
 # Especialidades da fila → nome da série SIH (ver _SCRIPTS/serie_producao_cirurgica.py)
