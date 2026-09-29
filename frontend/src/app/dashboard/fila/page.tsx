@@ -44,7 +44,7 @@ export default function FilaPage() {
     <div className="animate-fadein">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Fila Cirúrgica</h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--text2)' }}>Dados em tempo real — IntegraSUS SESA/CE</p>
+        <p className="text-sm mt-1" style={{ color: 'var(--text2)' }}>Última importação — IntegraSUS SESA/CE</p>
       </div>
 
       {/* KPIs */}
@@ -110,9 +110,16 @@ export default function FilaPage() {
               </tr>
             </thead>
             <tbody>
+              {pacientes.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="text-center text-sm text-slate-500 py-6">
+                    Nenhum paciente da sua instituição nesta lista. Dados de outras instituições aparecem apenas de forma agregada.
+                  </td>
+                </tr>
+              )}
               {pacientes.map((p: {
                 id: number
-                iniciais: string
+                iniciais: string | null
                 hospital_nome: string
                 especialidade: string
                 classif_swalis: string

@@ -10,7 +10,7 @@ Este documento não é parecer jurídico. Onde a mitigação depende de norma (L
 
 | ID | Risco | P | I | Exp. | Dono | Status |
 |---|---|---|---|---|---|---|
-| R01 | Dados de pacientes versionados no Git | 5 | 5 | 25 | PROP / ARQ | Aberto — ativo hoje |
+| R01 | Dados de pacientes versionados no Git | 5 | 5 | 25 | PROP / ARQ | Mitigado em 28/09/2026 (D05); residual: branch local `historico-local` e cópias locais — reavaliar pontuação |
 | R02 | Rubrica UX/UI (R$ 6.288) sem consultoria | 5 | 3 | 15 | PROP / GP | Aberto |
 | R03 | Troca AWS → Cloudflare frente ao texto aprovado | 4 | 3 | 12 | ARQ / PROP | Aberto |
 | R04 | Métricas fixas no código apresentadas como resultado | 5 | 4 | 20 | ENG / DS | Aberto — ativo hoje |
@@ -33,7 +33,8 @@ Este documento não é parecer jurídico. Onde a mitigação depende de norma (L
 ### R01 — Dados de pacientes versionados no Git (crítico)
 - **Fato verificado:** `backend/data/consulta-fila-espera_2026-02-22_*.csv` e `_2026-02-24_*.csv` (63.495 linhas cada; colunas incluem iniciais do paciente e número de solicitação) e `backend/predmed.db` (tabela da fila e tabela de usuários com hash de senha) estão rastreados e presentes em 4 commits. `.gitignore` já tem `*.db`, mas o arquivo foi adicionado antes e continua versionado.
 - **Por que importa mesmo com repositório privado:** iniciais + número de solicitação permitem reidentificação (a própria regra do `CLAUDE.md` os trata como dado pessoal); todo clone, backup, fork ou acesso de colaborador/consultoria carrega os dados; contraria o compromisso de anonimização da proposta (p. 2–3). A consultoria jurídica deve avaliar se há obrigações adicionais — não presumir.
-- **Mitigação:** B01–B03 do backlog (tirar do índice, decidir reescrita do histórico, descartar clones), manter dados reais só em armazenamento restrito e criptografado, usar dados anonimizados ou sintéticos rotulados em desenvolvimento, revisar quem teve acesso ao repositório.
+- **Atualização 28/09/2026:** B01–B03 concluídos (D05 em `decisoes.md`): o remoto recebeu histórico novo sem os arquivos; o histórico antigo ficou só na branch local não publicada `historico-local`. Risco residual: publicação acidental dessa branch, cópias locais e clones antigos.
+- **Mitigação:** B01–B03 do backlog (feitos), manter dados reais só em armazenamento restrito e criptografado, usar dados anonimizados ou sintéticos rotulados em desenvolvimento, revisar quem teve acesso ao repositório.
 - **Gatilho de escalonamento:** qualquer compartilhamento do repositório com terceiros (consultorias, bolsistas) antes da limpeza.
 
 ### R02 — Rubrica UX/UI sem consultoria

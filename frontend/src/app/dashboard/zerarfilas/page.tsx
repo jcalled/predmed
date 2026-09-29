@@ -15,7 +15,8 @@ export default function ZerarFilasPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-text1">Programa Zerar Filas</h1>
         <p className="text-sm mt-1" style={{ color: 'var(--text2)' }}>
-          Plano de eliminação da fila por especialidade — combina previsão ML + redistribuição CIR-aware
+          Plano <strong>simulado</strong> por especialidade — combina previsão sobre série histórica simulada + redistribuição por CIR.
+          Espera média e valor de AIH são parâmetros fixos, não medidos.
         </p>
       </div>
 
@@ -69,18 +70,18 @@ export default function ZerarFilasPage() {
             tooltip="Pacientes que podem ser realocados para hospitais com capacidade ociosa na mesma CIR."
           />
           <KPICard
-            label="AIH Estimada"
+            label="AIH Estimada (simulado)"
             value={r?.total_aih_estimada ? `R$ ${(r.total_aih_estimada / 1000).toFixed(0)}k` : '—'}
             detail="Receita redistribuição"
             color="green"
             tooltip="Valor estimado de AIH (R$1.500/cirurgia) que os hospitais receptores podem faturar com as redistribuições aprovadas."
           />
           <KPICard
-            label="Redução Projetada"
+            label="Redução Projetada (simulado)"
             value={r?.reducao_total_pct ? `-${r.reducao_total_pct}%` : '—'}
             detail="Em 6 meses"
             color="blue"
-            tooltip="Redução percentual da fila projetada em 6 meses com redistribuição completa."
+            tooltip="Cenário simulado sobre série histórica estimada; não é resultado medido."
           />
         </div>
       )}
@@ -150,7 +151,7 @@ export default function ZerarFilasPage() {
                   {/* Linha 2: métricas detalhadas */}
                   <div className="flex flex-wrap gap-4 text-xs" style={{ color: 'var(--text2)' }}>
                     <span>
-                      Espera média: <strong style={{ color: 'var(--text1)' }}>{p.espera_media_meses}m</strong>
+                      Espera média (parâmetro fixo): <strong style={{ color: 'var(--text1)' }}>{p.espera_media_meses}m</strong>
                     </span>
                     {p.pacientes_redistribuiveis > 0 && (
                       <span>
@@ -159,7 +160,7 @@ export default function ZerarFilasPage() {
                     )}
                     {p.aih_estimada_redistrib > 0 && (
                       <span>
-                        AIH: <strong style={{ color: 'var(--accent2)' }}>R$ {p.aih_estimada_redistrib.toLocaleString('pt-BR')}</strong>
+                        AIH (simulado): <strong style={{ color: 'var(--accent2)' }}>R$ {p.aih_estimada_redistrib.toLocaleString('pt-BR')}</strong>
                       </span>
                     )}
                     {p.meses_para_zeramento > 0 && (
@@ -197,13 +198,13 @@ export default function ZerarFilasPage() {
                     <span>•</span>
                     <span>{s.cir}</span>
                     <span>•</span>
-                    <span>~{s.distancia_km}km</span>
+                    <span>{s.distancia_km != null ? `~${s.distancia_km}km` : 'distância n/d'}</span>
                   </div>
                 </div>
                 <div className="text-right shrink-0">
                   <div className="font-bold" style={{ color: 'var(--accent)' }}>{s.qtd_sugerida} pac.</div>
                   <div className="text-xs" style={{ color: 'var(--accent2)' }}>
-                    AIH R$ {s.aih_estimada.toLocaleString('pt-BR')}
+                    AIH (simulado) R$ {s.aih_estimada.toLocaleString('pt-BR')}
                   </div>
                 </div>
                 {isSesa && (

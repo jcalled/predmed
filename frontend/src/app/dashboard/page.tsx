@@ -36,7 +36,7 @@ export default function DashboardPage() {
       <PageHeader
         title="Dashboard"
         subtitle={
-          isSesa ? 'Visão geral do Ceará — dados em tempo real IntegraSUS + DATASUS' :
+          isSesa ? 'Visão geral do Ceará — última importação IntegraSUS + DATASUS' :
           user?.role === 'sms' ? `${user.tenant_nome} — ${user.tenant_cir}` :
           user?.role === 'hospital_publico' ? `${user?.tenant_nome} — ${user?.tenant_cir}` :
           `${user?.tenant_nome} — ${user?.tenant_cir}`
@@ -58,7 +58,7 @@ export default function DashboardPage() {
           value={kpis?.total_fila ?? '—'}
           detail="Total SUS Ceará"
           color="red"
-          tooltip="Total de pacientes aguardando cirurgia eletiva registrados no IntegraSUS (SESA-CE), atualizado diariamente."
+          tooltip="Total de pacientes aguardando cirurgia eletiva registrados no IntegraSUS (SESA-CE), conforme a última importação de dados."
         />
         <KPICard
           label="Categoria A1 (Urgente)"
@@ -69,10 +69,10 @@ export default function DashboardPage() {
         />
         <KPICard
           label="Espera Média Oncologia"
-          value={kpis?.espera_media_oncologia_dias ? `${kpis.espera_media_oncologia_dias}d` : '—'}
+          value={kpis?.espera_media_oncologia_dias != null ? `${kpis.espera_media_oncologia_dias}d` : 'não disponível'}
           detail="Lei 12.732 permite 60d"
           color="red"
-          tooltip="Lei 12.732/2012 obriga cirurgia em até 60 dias após diagnóstico oncológico. Acima disso configura infração."
+          tooltip="Lei 12.732/2012: até 60 dias após o diagnóstico. A fila importada não traz data de entrada confiável, então a espera ainda não é calculada."
         />
         <KPICard
           label="Hospitais Monitorados"
@@ -99,15 +99,17 @@ export default function DashboardPage() {
         />
         <KPICard
           label="Redução Potencial"
-          value={kpis?.reducao_estimada_pct ? `${kpis.reducao_estimada_pct}%` : '—'}
-          detail="Com redistribuição"
+          value={kpis?.reducao_estimada_pct != null ? `${kpis.reducao_estimada_pct}%` : 'não validado'}
+          detail={`Meta do projeto: −${kpis?.meta_reducao_espera_pct ?? 40}% na espera`}
           color="green"
+          tooltip="Meta da proposta, ainda não comprovada. Não é resultado medido."
         />
         <KPICard
           label="Acurácia do Modelo"
-          value={kpis?.acuracia_mape ? `${kpis.acuracia_mape}%` : '—'}
-          detail="MAPE — meta ≤ 15%"
+          value={kpis?.acuracia_mape != null ? `${kpis.acuracia_mape}%` : 'não validado'}
+          detail={`MAPE — meta do projeto < ${kpis?.meta_mape_pct ?? 15}%`}
           color="blue"
+          tooltip="Sem avaliação em dados reais até o momento. A validação por holdout no SIH está na tela Validação."
         />
       </div>
 

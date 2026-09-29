@@ -1,19 +1,13 @@
 "use client";
 
 /*
-Pra que serve a tela Validação (MAPE)?
-
-Ela serve pra provar, com métrica, que a previsão do PredMed está acertando a realidade.
-Você tem uma previsão (modelo / Holt-Winters / Prophet etc.)
-E tem o real (internações do SIH por mês
-A validação calcula o MAPE = erro médio percentual absoluto mês a mês
-
-Isso é importante por 3 motivos:
-
-Centelha / editais: você consegue dizer “meu modelo tem MAPE < 15%” (validado com dado público).
-Credibilidade: transforma “IA prevê” em “IA prevê com X% de erro”.
-Produto: habilita um selo tipo “Previsão confiável” e permite comparar especialidades/hospitais.
-Se está tudo “SEM DADOS”, não é bug de frontend: é o backend dizendo não achei base real suficiente pra comparar.*/
+Tela Validação (MAPE): mede o erro da previsão Holt-Winters contra dados observados.
+Método: holdout temporal — treina na série mensal de AIH do SIH sem os últimos N meses,
+prevê esses N meses e compara com o realizado.
+Atenção: o alvo validado aqui é a produção hospitalar (contagem de AIH), não a fila.
+"SEM DADOS" significa que o backend não encontrou base SIH suficiente (não é bug do frontend).
+Meta do projeto (proposta Centelha): MAPE < 15%. A meta é referência, não resultado.
+*/
 
 import { useEffect, useMemo, useState } from "react";
 import { analyticsApi } from "@/lib/api";
@@ -30,8 +24,10 @@ interface ComparacaoMensal {
 interface ValidacaoData {
   especialidade: string;
   mape_real: number | null;
-  meta_centelha_pct: number;
-  aprovado: boolean | null;
+  meta_projeto_mape_pct: number;
+  dentro_da_meta: boolean | null;
+  status?: "calculado" | "nao_validado";
+  alvo_validado?: string;
   comparacao_mensal: ComparacaoMensal[];
   meses_comparados: number;
   meses_sem_dados_reais: number;
@@ -74,10 +70,9 @@ export default function ValidacaoPage() {
   };
 
   const mapeLabel = (mape: number | null) => {
-    if (mape === null) return "SEM DADOS";
-    if (mape < 10) return "EXCELENTE";
-    if (mape < 15) return "APROVADO";
-    return "REPROVADO";
+    if (mape === null) return "NÃO VALIDADO";
+    if (mape < 15) return "DENTRO DA META";
+    return "ACIMA DA META";
   };
 
   const carregar = async (esp: string, horizonte: number) => {
@@ -160,10 +155,10 @@ export default function ValidacaoPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold tracking-widest text-violet-400 uppercase">
-              Validação MAPE — Programa Centelha
+              Validação MAPE (holdout SIH)
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              Compara previsão do modelo vs dados SIH realizados. Meta: MAPE &lt; 15%
+              Compara previsão Holt-Winters vs produção SIH realizada (contagem de AIH, não a fila). Meta do projeto: MAPE &lt; 15%
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -186,7 +181,7 @@ export default function ValidacaoPage() {
       </div>
 
       <div className="px-8 py-6 space-y-6">
-        {/* Grid de aprovação — todas especialidades */}
+        {/* Grid de status — todas especialidades */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <p className="text-[10px] text-slate-500 uppercase tracking-widest">
@@ -239,7 +234,7 @@ export default function ValidacaoPage() {
             {/* Resultado principal */}
             <div className="bg-[#0c0c1a] border border-violet-900/30 rounded-xl p-6 flex flex-col items-center justify-center text-center">
               <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-3">
-                MAPE Real — {espSel}
+                MAPE calculado — {espSel}
               </p>
 
               <div className="relative w-32 h-32 mb-4">
@@ -391,13 +386,14 @@ export default function ValidacaoPage() {
         {/* Nota metodológica */}
         <div className="bg-[#0c0c1a] border border-violet-900/20 rounded-xl p-5">
           <p className="text-[10px] text-violet-400 uppercase tracking-widest mb-2 font-bold">
-            Metodologia — Programa Centelha 3
+            Metodologia
           </p>
           <p className="text-xs text-slate-400 leading-relaxed">
-            O MAPE (Mean Absolute Percentage Error) é calculado comparando as previsões do modelo Holt-Winters
-            com os dados reais de internações do SIH/DATASUS Ceará. O Programa Centelha exige MAPE &lt; 15%
-            para validação da inovação tecnológica. Os dados de validação são públicos e auditáveis via
-            TabNet/DATASUS.
+            O MAPE (Mean Absolute Percentage Error) é calculado por holdout temporal: o modelo Holt-Winters é
+            treinado sem os últimos meses da série mensal de AIH do SIH/DATASUS Ceará e comparado com o realizado
+            nesses meses. O alvo é a produção hospitalar, não a fila de espera. A meta do projeto (proposta ao
+            Programa Centelha 3) é MAPE &lt; 15%; é uma meta, não um resultado garantido. Os dados de validação
+            são públicos (TabNet/DATASUS).
           </p>
         </div>
       </div>

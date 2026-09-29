@@ -310,6 +310,10 @@ def get_cir(municipio: str) -> str:
     return CIR_OFICIAL.get(norm(municipio), "DESCONHECIDO")
 
 
+# Valor fixo por AIH usado nas simulações de redistribuição (não é valor pago pelo SUS).
+VALOR_AIH_SIMULADO = 1500
+
+
 def calc_pressao(fila: int, media_mensal: float) -> float:
     if media_mensal <= 0:
         return 99.0 if fila > 0 else 0.0
@@ -352,11 +356,18 @@ def get_dashboard_kpis(db: Session, role: str, tenant_id: Optional[int] = None) 
         "hospitais_monitorados": total_hospitais,
         "hospitais_sobrecarregados": sobrecarregados,
         "hospitais_ociosos": ociosos,
-        "reducao_estimada_pct": 40,
         "especialidades_top": [{"nome": e, "total": n} for e, n in esp_counts],
-        "acuracia_mape": 11.2,
+        # B05: sem avaliação calculada → null + status. Metas do projeto vêm separadas.
+        "reducao_estimada_pct": None,
+        "reducao_estimada_status": "nao_validado",
+        "meta_reducao_espera_pct": 40,
+        "acuracia_mape": None,
+        "acuracia_mape_status": "nao_validado",
+        "meta_mape_pct": 15,
         "horizonte_dias": 90,
-        "espera_media_oncologia_dias": 188,
+        # A fila IntegraSUS importada não traz data de entrada confiável: espera não é calculada.
+        "espera_media_oncologia_dias": None,
+        "espera_media_oncologia_status": "nao_disponivel",
     }
 
 def inferir_cir_from_nome(nome: str) -> str:
@@ -697,9 +708,14 @@ def get_redistribuicao_sugestoes(db: Session, cir_filter: Optional[str] = None) 
                 "especialidade": especialidade_dest,
                 "qtd_sugerida": qtd_sugerida,
                 "capacidade_livre": int(capacidade_livre),
+                # Estimativa heurística (fila/produção mensal × 30), não medida.
                 "reducao_espera_dias": reducao_espera,
-                "aih_estimada": qtd_sugerida * 1500,
-                "distancia_km": 25,  # Idealmente calcular distância real
+                "reducao_espera_origem": "simulado",
+                # Valor fixo de R$ 1.500 por AIH — simulação, não valor pago.
+                "aih_estimada": qtd_sugerida * VALOR_AIH_SIMULADO,
+                "aih_estimada_origem": "simulado",
+                # Distância ainda não calculada (antes era 25 km fixo).
+                "distancia_km": None,
                 "cir": origem["cir"],
                 "macro_origem": get_macro_regiao(origem["cir"]),
                 "macro_destino": get_macro_regiao(destino["cir"]),
@@ -727,7 +743,8 @@ def get_redistribuicao_sugestoes(db: Session, cir_filter: Optional[str] = None) 
         "total_sobrecarregados": total_sobrecarregados,
         "total_ociosos": total_ociosos,
         "total_redistribuiveis": total_redistribuiveis,
-        "reducao_media_espera": 76,
+        "reducao_media_espera": None,
+        "reducao_media_espera_status": "nao_validado",
         "cirs_disponiveis": cirs_disponiveis,
         "cir_selecionada": cir_filter,
         # NOVO: estatísticas por macro

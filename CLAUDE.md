@@ -23,8 +23,8 @@ Vigência do plano: **set/2026 → set/2027 (12 meses)**. Clientes-alvo: SESA-CE
 
 ## Decisões do responsável (28/09/2026)
 - Repositório GitHub é **privado**.
-- **UX/UI será feito internamente** (sem consultoria contratada) — a rubrica de R$ 6.288 precisa de tratamento junto à FUNCAP.
-- **Infra portável: Cloudflare Workers (preferência) e AWS**. Nada acoplado a um único provedor sem camada de abstração.
+- **UX/UI será feito internamente** (sem consultoria contratada) — remanejamento da rubrica de R$ 6.288 em standby.
+- **Nuvem: AWS, região São Paulo (sa-east-1)** — nota fiscal brasileira e aderência ao texto aprovado. Manter a aplicação **portável** (Docker, PostgreSQL padrão, armazenamento compatível com S3, config por env). Cloudflare descartado como principal. Registro completo em `docs/gestao/decisoes.md`.
 
 ## Regras para qualquer agente
 - **Nunca** exibir, copiar ou commitar dados identificáveis de pacientes (nome/iniciais + nº de solicitação contam como dado pessoal).

@@ -58,13 +58,42 @@ Acesse:
 
 ---
 
-## Usuários de Demo
+## Usuários de Demo (somente desenvolvimento)
 
-| Role | Email | Senha |
-|------|-------|-------|
-| 🏛️ SESA (Gestor Estadual) | sesa@predmed.com | predmed123 |
-| 🏥 Hospital Público (HGF) | hgf@predmed.com | predmed123 |
-| 🏢 Hospital Particular | particular@predmed.com | predmed123 |
+| Role | Email |
+|------|-------|
+| 🏛️ SESA (Gestor Estadual) | sesa@predmed.com |
+| 🏙️ SMS Sobral | sms@predmed.com |
+| 🏥 Hospital Público (HGF) | hgf@predmed.com |
+| 🏢 Hospital Particular | particular@predmed.com |
+
+Com `APP_ENV=dev` (padrão do `./start.sh`) e sem `SEED_SENHA_PADRAO`, os usuários **criados pelo seed**
+recebem a senha de desenvolvimento `predmed123`. A tela de login mostra os atalhos de demo apenas em
+`next dev` (ou com `NEXT_PUBLIC_MOSTRAR_DEMO=1`). Usuários que já existem no banco **mantêm a senha atual**:
+o seed não altera nem recria usuários.
+
+---
+
+## Configuração e segurança (Sprint 1 — B04)
+
+O backend lê variáveis do ambiente ou de `backend/.env` (modelo em `backend/.env.example`; o `.env` não é versionado).
+
+| Variável | Em `APP_ENV=dev` | Fora de dev (qualquer outro valor ou ausente) |
+|---|---|---|
+| `APP_ENV` | `./start.sh` define `dev` se não houver valor | ausente = produção |
+| `SECRET_KEY` | opcional; se faltar, gera um segredo local em `backend/.dev-secret-key` (ignorado pelo git) | **obrigatória** — a API não inicia sem ela |
+| `CORS_ORIGINS` | padrão `http://localhost:3000,http://127.0.0.1:3000` | lista separada por vírgula; vazio = nenhuma origem |
+| `SEED_SENHA_PADRAO` / `SEED_SENHA_<SESA\|SMS\|HGF\|PARTICULAR>` | padrão `predmed123` | obrigatória; sem ela o seed **não cria** o usuário |
+| `DATABASE_URL` | padrão `sqlite:///./predmed.db` | idem |
+
+O que mudou:
+- O segredo JWT não tem mais valor fixo no código. Tokens emitidos com o segredo antigo deixam de valer.
+- `seed.py` é **idempotente**: cria apenas tenants, usuários e vagas que faltam; não apaga nada e só importa CSVs se a fila/capacidade estiver vazia. Para carregar CSVs novos: `python seed.py --reimportar`.
+- A importação IntegraSUS/DATASUS valida o arquivo antes e substitui os dados numa única transação; se o arquivo for inválido ou a carga falhar, os dados anteriores são mantidos (upload responde 400).
+- `./start.sh` usa `backend/venv/bin/python` diretamente (o `activate` do venv apontava para um caminho antigo).
+- **Rotação**: as contas já existentes em `predmed.db` continuam com a senha antiga. Para trocá-las sem apagar nada: `cd backend && SEED_SENHA_PADRAO='<nova>' APP_ENV=dev venv/bin/python seed.py --redefinir-senhas` (só aceita senha vinda de variável; nunca usa o padrão de dev).
+
+Gerar um segredo: `python -c "import secrets; print(secrets.token_urlsafe(48))"`.
 
 ---
 
@@ -80,9 +109,9 @@ cp consulta-fila-espera_2026-02-22_13-14-37.csv backend/data/
 cp tabnet_internacoes_ceara_datasus.csv backend/data/
 ```
 
-Após adicionar os CSVs, rode novamente:
+Após adicionar os CSVs, rode (a fila só é substituída se o novo arquivo for válido):
 ```bash
-cd backend && source venv/bin/activate && python seed.py
+cd backend && APP_ENV=dev venv/bin/python seed.py --reimportar
 ```
 
 Ou faça upload via interface web em **Configurações → Importação de Dados** (usuário SESA).
@@ -91,18 +120,23 @@ Ou faça upload via interface web em **Configurações → Importação de Dados
 
 ## Multi-tenant — Quem vê o quê
 
-| Tela | SESA | Hosp. Público | Hosp. Particular |
-|------|:----:|:-------------:|:----------------:|
-| Dashboard (geral) | ✅ Ceará todo | ✅ Ceará todo | ✅ Ceará todo |
-| Fila Cirúrgica | ✅ tudo | ✅ só o seu hosp. | ✅ tudo |
-| Priorização | ✅ | ✅ | ✅ |
-| **Redistribuição** | ✅ + botão Aprovar | 👁️ leitura | 👁️ leitura |
-| Hospitais | ✅ todos | ✅ sua CIR | ✅ públicos da CIR |
-| Judicializados | ✅ | ✅ | ✅ |
-| Prog. Zerar Filas | ✅ | ✅ | ✅ |
-| **Configurações → Vagas SUS** | ❌ | ❌ | ✅ só ele |
-| **Configurações → Importar CSV** | ✅ | ❌ | ❌ |
-| Relatórios | ✅ Ceará | ✅ seu hosp. | ✅ seu hosp. |
+| Tela | SESA | SMS | Hosp. Público | Hosp. Particular |
+|------|:----:|:---:|:-------------:|:----------------:|
+| Dashboard (geral) | ✅ Ceará todo | ✅ Ceará todo | ✅ Ceará todo | ✅ Ceará todo |
+| Fila Cirúrgica | ✅ tudo | ✅ tudo | ✅ só o seu hosp. | 📊 só agregados* |
+| Priorização | ✅ | ✅ | ✅ todas as instituições, iniciais de outros hosp. ocultas | 📊 só agregados* |
+| **Redistribuição** | ✅ + botão Aprovar | 👁️ leitura | 👁️ leitura | 👁️ leitura |
+| Hospitais | ✅ todos | ✅ todos | ✅ sua CIR | ✅ públicos da CIR |
+| Judicializados | ✅ | ✅ | ✅ todas as instituições, iniciais de outros hosp. ocultas | 📊 só agregados* |
+| Prog. Zerar Filas | ✅ | ✅ | ✅ | ✅ |
+| **Configurações → Vagas SUS** | ❌ | ❌ | ❌ | ✅ só ele |
+| **Configurações → Importar CSV** | ✅ | ❌ | ❌ | ❌ |
+| Relatórios | ✅ Ceará | ✅ Ceará | ✅ seu hosp. | ✅ seu hosp. |
+
+\* Hospital particular: linhas individuais apenas de pacientes do próprio hospital; do restante do estado, somente contagens (por especialidade, SWALIS, total de judicializados).
+
+Regras decididas pelo proponente em 28/09/2026 (testes em `backend/tests/test_isolamento_tenant.py`).
+- O vínculo tenant → hospital ainda usa o **1º termo do nome do tenant** (ex.: "HGF ..."). Se esse termo for genérico ("Hospital", "Instituto"...) ou faltar, a API **não mostra pacientes nem iniciais** (falha fechado). Solução definitiva pendente: vincular tenant ao hospital por CNES.
 
 ---
 

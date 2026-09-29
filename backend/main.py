@@ -5,15 +5,16 @@ Multi-tenant, role-based, dados reais IntegraSUS + DATASUS
 from fastapi import FastAPI, Depends, HTTPException, Body, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from sqlalchemy import func, extract
+from sqlalchemy import func, extract, false
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime, date
 import random
 import shutil
 import os
+import tempfile
 
-from services.previsoes_ml import limpar_cache, get_previsoes_todas_especialidades_prophet
+from services.previsoes_ml import limpar_cache, get_previsoes_ml, get_previsoes_ml_todas
 
 from contextlib import asynccontextmanager
 import threading
@@ -28,6 +29,7 @@ from database import (
     Usuario, Tenant, PacienteFila, CapacidadeHospital,
     ConfigVagas, Transferencia
 )
+from config import get_cors_origins
 from auth import (
     hash_password, verify_password, create_token,
     get_current_user, require_sesa
@@ -35,16 +37,14 @@ from auth import (
 from services.ia_engine import (
     get_dashboard_kpis, get_hospitais_pressao,
     get_redistribuicao_sugestoes, get_vagas_status_tenant,
-    pressao_status
+    pressao_status, VALOR_AIH_SIMULADO
 )
-from services.data_import import import_integrasus, import_datasus
+from services.data_import import import_integrasus, import_datasus, ImportacaoInvalida
 
 from services.previsoes import (
     get_previsoes, get_previsoes_todas_especialidades,
-    build_serie_historica, ESPERA_MEDIA_ESP
+    build_serie_historica, ESPERA_MEDIA_ESP, ESPERA_MEDIA_ORIGEM
 )
-
-from services.previsoes_ml import get_previsoes_prophet, get_previsoes_todas_especialidades_prophet
 
 from services.analytics_sih import (
     get_resumo_analytics, get_sazonalidade_real,
@@ -53,15 +53,9 @@ from services.analytics_sih import (
     get_validacao_mape, get_espera_media_real
 )
 
-# def _treinar_em_background(db):
-#     """Treina todos os modelos ao subir o servidor."""
-#     logger.info("🔄 Iniciando pré-treinamento dos modelos ML...")
-#     get_previsoes_todas_especialidades_prophet(db)
-#     logger.info("✅ Modelos ML prontos!")
 
 def _treinar_em_background(db):
     logger.info("🔄 Retreinando modelos ML após upload...")
-    from services.previsoes_ml import get_previsoes_prophet
     from database import SerieHistorica
 
     especialidades = db.query(SerieHistorica.especialidade).distinct().all()
@@ -75,7 +69,7 @@ def _treinar_em_background(db):
     for esp in especialidades:
         for h in horizontes:
             try:
-                get_previsoes_prophet(db, esp, horizonte=h)
+                get_previsoes_ml(db, esp, horizonte=h)
                 logger.info(f"✅ {esp} — {h} meses treinado")
             except Exception as e:
                 logger.error(f"❌ {esp} {h}m: {e}")
@@ -98,7 +92,7 @@ app = FastAPI(title="PREDMED API", version="1.0.0") # Sem retreino
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=get_cors_origins(),  # CORS_ORIGINS (vírgula); padrão localhost só em dev
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -192,6 +186,62 @@ def dashboard(
     return get_dashboard_kpis(db, user.role, user.tenant_id)
 
 
+# ─── ESCOPO DE DADOS POR INSTITUIÇÃO ───────────────────────
+# Regras decididas pelo proponente em 28/09/2026 (README, "Quem vê o quê"):
+# - SESA e SMS: veem o estado inteiro.
+# - hospital_publico: fila detalhada só do próprio hospital; priorização e
+#   judicializados de todas as instituições, com iniciais ocultas nas linhas
+#   de outros hospitais (LGPD).
+# - hospital_particular: linhas individuais só do próprio hospital; do resto
+#   do estado, apenas dados agregados (contagens).
+# O vínculo tenant → hospital ainda é feito pelo 1º termo do nome do tenant
+# (ex.: "HGF ..." → hospital_nome ILIKE '%HGF%'). Enquanto não houver vínculo
+# por CNES, falhamos fechado quando a chave é genérica ou ausente.
+_ROLES_HOSPITAL = ("hospital_publico", "hospital_particular")
+_CHAVES_GENERICAS = {
+    "HOSPITAL", "HOSP", "HOSP.", "INSTITUTO", "CENTRO", "CLINICA", "CLÍNICA",
+    "SECRETARIA", "SMS", "SESA", "UNIDADE", "MATERNIDADE", "SANTA", "SAO", "SÃO",
+}
+
+
+def _chave_hospital_do_tenant(db: Session, user: Usuario) -> Optional[str]:
+    """Chave de nome do hospital do usuário, ou None se não for seguro filtrar."""
+    tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id).first() if user.tenant_id else None
+    if not tenant or not tenant.nome or not tenant.nome.split():
+        return None
+    chave = tenant.nome.upper().split()[0]
+    if len(chave) < 3 or chave in _CHAVES_GENERICAS:
+        logger.warning("Tenant %s com nome genérico: escopo de hospital não resolvido", tenant.id)
+        return None
+    return chave
+
+
+def _filtrar_pacientes_por_escopo(q, db: Session, user: Usuario):
+    """Restringe uma query de PacienteFila às linhas do próprio hospital (perfis hospitalares)."""
+    if user.role in _ROLES_HOSPITAL:
+        chave = _chave_hospital_do_tenant(db, user)
+        if chave is None:
+            return q.filter(false())  # falha fechado: sem vínculo confiável, nada é exibido
+        return q.filter(PacienteFila.hospital_nome.ilike(f"%{chave}%"))
+    return q
+
+
+def _escopo_linhas_compartilhadas(q, db: Session, user: Usuario):
+    """Priorização/judicializados: hospital público vê todas as instituições;
+    hospital particular só as próprias linhas (o resto apenas agregado)."""
+    if user.role == "hospital_particular":
+        return _filtrar_pacientes_por_escopo(q, db, user)
+    return q
+
+
+def _mascara_iniciais(db: Session, user: Usuario):
+    """Função que oculta as iniciais de pacientes de outros hospitais (perfis hospitalares)."""
+    if user.role not in _ROLES_HOSPITAL:
+        return lambda p: p.iniciais
+    chave = _chave_hospital_do_tenant(db, user)
+    return lambda p: p.iniciais if chave and chave in (p.hospital_nome or "").upper() else None
+
+
 # ─── FILA CIRÚRGICA ───────────────────────────────────────
 @app.get("/fila")
 def fila(
@@ -204,14 +254,17 @@ def fila(
     user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    q = db.query(PacienteFila)
-
-    # hospital_publico vê só a fila do seu próprio hospital
+    # Perfis hospitalares veem linhas só do próprio hospital
+    q = _filtrar_pacientes_por_escopo(db.query(PacienteFila), db, user)
+    # Estatísticas agregadas: hospital público no próprio escopo;
+    # particular, SMS e SESA no estado inteiro (só contagens)
     if user.role == "hospital_publico":
-        tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id).first()
-        if tenant:
-            hosp_key = tenant.nome.upper().split()[0]
-            q = q.filter(PacienteFila.hospital_nome.ilike(f"%{hosp_key}%"))
+        escopo = q
+        agg_esp = _filtrar_pacientes_por_escopo(
+            db.query(PacienteFila.especialidade, func.count(PacienteFila.id)), db, user)
+    else:
+        escopo = db.query(PacienteFila)
+        agg_esp = db.query(PacienteFila.especialidade, func.count(PacienteFila.id))
 
     if especialidade:
         q = q.filter(PacienteFila.especialidade.ilike(f"%{especialidade}%"))
@@ -233,16 +286,14 @@ def fila(
     )
     rows = q.order_by(swalis_order).offset((page - 1) * limit).limit(limit).all()
 
-    # Stats gerais
     stats = {
         "total": total,
-        "a1": db.query(func.count(PacienteFila.id)).filter(
-            PacienteFila.classif_swalis == "Categoria A1").scalar() or 0,
-        "judicializados": db.query(func.count(PacienteFila.id)).filter(
-            PacienteFila.judicializado == True).scalar() or 0,
+        "total_escopo_agregado": escopo.count(),
+        "a1": escopo.filter(PacienteFila.classif_swalis == "Categoria A1").count(),
+        "judicializados": escopo.filter(PacienteFila.judicializado == True).count(),
         "especialidades": [
             {"nome": e, "total": n}
-            for e, n in db.query(PacienteFila.especialidade, func.count(PacienteFila.id))
+            for e, n in agg_esp
             .group_by(PacienteFila.especialidade)
             .order_by(func.count(PacienteFila.id).desc()).limit(10).all()
         ],
@@ -344,7 +395,8 @@ def aprovar_redistribuicao(
     return {
         "protocolo": protocolo,
         "status": "aprovado",
-        "aih_estimada": data.qtd_pacientes * 1500,
+        "aih_estimada": data.qtd_pacientes * VALOR_AIH_SIMULADO,
+        "aih_estimada_origem": "simulado",
         "message": f"✅ {data.qtd_pacientes} pacientes alocados para {data.hospital_destino}",
     }
 
@@ -358,9 +410,11 @@ def historico_transferencias(
     if user.role == "hospital_particular":
         q = q.filter(Transferencia.tenant_destino_id == user.tenant_id)
     elif user.role == "hospital_publico":
-        tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id).first()
-        if tenant:
-            q = q.filter(Transferencia.hospital_origem.ilike(f"%{tenant.nome.split()[0]}%"))
+        chave = _chave_hospital_do_tenant(db, user)
+        if chave is None:
+            q = q.filter(false())
+        else:
+            q = q.filter(Transferencia.hospital_origem.ilike(f"%{chave}%"))
 
     rows = q.order_by(Transferencia.data_aprovacao.desc()).limit(50).all()
     return {
@@ -373,7 +427,8 @@ def historico_transferencias(
                 "especialidade": t.especialidade,
                 "qtd_pacientes": t.qtd_pacientes,
                 "status": t.status,
-                "aih_estimada": t.qtd_pacientes * 1500,
+                "aih_estimada": t.qtd_pacientes * VALOR_AIH_SIMULADO,
+                "aih_estimada_origem": "simulado",
             }
             for t in rows
         ]
@@ -423,17 +478,33 @@ def update_vaga(
 
 
 # ─── IMPORTAÇÃO DE DADOS ──────────────────────────────────
+def _importar_upload(file: UploadFile, importador, db: Session) -> int:
+    """
+    Grava o upload num arquivo temporário com nome gerado (não usa file.filename),
+    chama o importador (transacional) e apaga o temporário.
+    Arquivo inválido → 400 e a base anterior é preservada.
+    """
+    fd, path = tempfile.mkstemp(prefix="predmed-upload-", suffix=".csv")
+    try:
+        with os.fdopen(fd, "wb") as f:
+            shutil.copyfileobj(file.file, f)
+        return importador(path, db)
+    except ImportacaoInvalida as e:
+        raise HTTPException(400, f"Importação rejeitada: {e}. Dados anteriores preservados.")
+    finally:
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+
+
 @app.post("/admin/import/integrasus")
 def upload_integrasus(
     file: UploadFile = File(...),
     user: Usuario = Depends(require_sesa),
     db: Session = Depends(get_db)
 ):
-    path = f"/tmp/{file.filename}"
-    with open(path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-    count = import_integrasus(path, db)
-
+    count = _importar_upload(file, import_integrasus, db)
 
     # Após salvar os dados, limpa cache e retreina em background
     limpar_cache()
@@ -453,10 +524,7 @@ def upload_datasus(
     user: Usuario = Depends(require_sesa),
     db: Session = Depends(get_db)
 ):
-    path = f"/tmp/{file.filename}"
-    with open(path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-    count = import_datasus(path, db)
+    count = _importar_upload(file, import_datasus, db)
     return {"ok": True, "hospitais_importados": count}
 
 
@@ -472,8 +540,11 @@ def priorizacao(
          "Categoria C": 3, "Categoria D": 4},
         value=PacienteFila.classif_swalis, else_=5
     )
-    top = db.query(PacienteFila).order_by(swalis_order).limit(20).all()
+    iniciais = _mascara_iniciais(db, user)
+    top = _escopo_linhas_compartilhadas(db.query(PacienteFila), db, user) \
+        .order_by(swalis_order).limit(20).all()
 
+    # Distribuição SWALIS é agregada: estado inteiro para todos os perfis
     dist = db.query(
         PacienteFila.classif_swalis,
         func.count(PacienteFila.id).label("n")
@@ -482,7 +553,7 @@ def priorizacao(
     return {
         "top_prioritarios": [
             {
-                "id": p.id, "iniciais": p.iniciais,
+                "id": p.id, "iniciais": iniciais(p),
                 "hospital_nome": p.hospital_nome,
                 "especialidade": p.especialidade,
                 "classif_swalis": p.classif_swalis,
@@ -506,16 +577,18 @@ def judicializados(
     user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    rows = db.query(PacienteFila).filter(
+    iniciais = _mascara_iniciais(db, user)
+    # Total é agregado (estado inteiro); linhas conforme o perfil
+    total = db.query(PacienteFila).filter(PacienteFila.judicializado == True).count()
+    rows = _escopo_linhas_compartilhadas(db.query(PacienteFila), db, user).filter(
         PacienteFila.judicializado == True
     ).limit(100).all()
 
     return {
-        "total": db.query(func.count(PacienteFila.id)).filter(
-            PacienteFila.judicializado == True).scalar() or 0,
+        "total": total,
         "pacientes": [
             {
-                "id": p.id, "iniciais": p.iniciais,
+                "id": p.id, "iniciais": iniciais(p),
                 "municipio": p.municipio, "hospital_nome": p.hospital_nome,
                 "especialidade": p.especialidade, "classif_swalis": p.classif_swalis,
                 "procedimento": p.procedimento,
@@ -536,9 +609,8 @@ def relatorio_resumo(
 
     # Filtra hospitais por role
     if user.role == "hospital_publico":
-        tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id).first()
-        nome_key = tenant.nome.split()[0] if tenant else ""
-        hosp = [h for h in hosp if nome_key.upper() in h["hospital_nome"].upper()]
+        chave = _chave_hospital_do_tenant(db, user)
+        hosp = [h for h in hosp if chave and chave in h["hospital_nome"].upper()]
 
     return {
         "kpis": kpis,
@@ -587,24 +659,10 @@ def recalcular_previsoes(
     return {"ok": True, "message": "Série histórica recalculada com sucesso"}
 
 
-# --- PREVISOES PROPHET (MACHINE LEARNING) ---────────────────────────────────────────
+# --- PREVISÕES ML (Holt-Winters; série histórica simulada, não validada) ---
 
-# @app.get("/previsoes/prophet")
-# def previsoes_prophet(
-#     especialidade: Optional[str] = None,
-#     horizonte: int = 6,
-#     user: Usuario = Depends(get_current_user),
-#     db: Session = Depends(get_db)
-# ):
-#     """
-#     Previsões usando Prophet (Facebook) - MAPE < 15%
-     
-#     Este é o modelo principal para o Programa Centelha.
-#     """
-#     return get_previsoes_prophet(db, especialidade, horizonte)
-
-@app.get("/previsoes/prophet")
-def previsoes_prophet(
+@app.get("/previsoes/ml")
+def previsoes_ml(
     especialidade: Optional[str] = None,
     horizonte: int = 6,
     user: Usuario = Depends(get_current_user),
@@ -626,8 +684,8 @@ def previsoes_prophet(
     }
 
 
-@app.get("/previsoes/prophet/todas")
-def previsoes_prophet_todas(
+@app.get("/previsoes/ml/todas")
+def previsoes_ml_todas(
     user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -644,7 +702,7 @@ def previsoes_prophet_todas(
         }
 
     # Cache populado — chama normalmente (retorna tudo do cache, não retreina)
-    return get_previsoes_todas_especialidades_prophet(db)
+    return get_previsoes_ml_todas(db)
 
 # ─── ZERAR FILAS ──────────────────────────────────────────
 @app.get("/zerarfilas")
@@ -685,7 +743,8 @@ def zerar_filas(
             "reducao_redistrib_pct": reducao_pct,
             "espera_media_meses": espera_meses,
             "meses_para_zeramento": meses_zeramento,
-            "aih_estimada_redistrib": redistrib_esp * 1500,
+            "aih_estimada_redistrib": redistrib_esp * VALOR_AIH_SIMULADO,
+            "espera_media_origem": ESPERA_MEDIA_ORIGEM,
             "urgencia": esp["urgencia"],
             "tendencia": esp["tendencia"],
         })
@@ -705,12 +764,15 @@ def zerar_filas(
             "fila_total_6m_com_redistrib": fila_total_6m_com,
             "total_pacientes_redistribuiveis": total_redistribuiveis,
             "total_aih_estimada": total_aih,
+            "aih_estimada_origem": "simulado",
             "reducao_total_pct": round(
                 (fila_total_6m_sem - fila_total_6m_com) / max(fila_total_6m_sem, 1) * 100, 1
             ),
         },
         "plano_por_especialidade": plano,
         "sugestoes_redistribuicao": redistrib["sugestoes"],
+        "origem": "simulado",
+        "aviso": "Plano simulado: série histórica estimada, espera média e valor de AIH são parâmetros fixos não validados.",
         "gerado_em": datetime.now().isoformat(),
     }
 
@@ -802,8 +864,8 @@ def analytics_validacao_mape(
     db: Session = Depends(get_db),
 ):
     """
-    MAPE real: compara previsão do modelo vs dados SIH realizados.
-    Prova técnica para o Programa Centelha (exige MAPE < 15%).
+    MAPE calculado: compara previsão do modelo vs dados SIH realizados.
+    Meta do projeto (proposta Centelha): MAPE < 15%.
     """
     from services.analytics_sih import get_validacao_mape
     return get_validacao_mape(db, especialidade=especialidade, meses_validacao=meses)
@@ -815,8 +877,8 @@ def analytics_espera_media(
     db: Session = Depends(get_db),
 ):
     """
-    Tempo médio de espera real por especialidade — calculado do SIH.
-    Substitui os valores hardcoded em ESPERA_MEDIA_ESP.
+    Permanência hospitalar média por especialidade (SIH, em meses).
+    Não é tempo de espera na fila; ESPERA_MEDIA_ESP continua sendo parâmetro fixo.
     """
     from services.analytics_sih import get_espera_media_real
     return get_espera_media_real(db)

@@ -30,6 +30,7 @@ lightning_logs/
 .env
 .env.*
 !.env.example
+backend/.dev-secret-key
 
 # Sistema / logs / temporários
 .DS_Store

@@ -22,6 +22,10 @@ from database import (
 from datetime import datetime
 
 
+class ImportacaoInvalida(ValueError):
+    """Arquivo de importação rejeitado na validação; a base anterior é mantida."""
+
+
 # ═══════════════════════════════════════════════════════════════════════
 # CIR OFICIAL — Fonte: SESA-CE lista_sr_ads_20220203.pdf
 # Todos os 184 municípios do Ceará mapeados para sua CIR/ADS
@@ -485,104 +489,110 @@ def import_datasus(csv_path: str, db: Session) -> int:
     col_total = df.columns[1] if len(df.columns) > 1 else None
     n_meses = 66  # Jan/2020–Jun/2025
 
-    # Limpa tabela CapacidadeHospital (os dados serão substituídos)
-    db.query(CapacidadeHospital).delete()
-    db.commit()
-
+    # Substituição transacional: só faz commit no fim; erro ou arquivo vazio → rollback
     imported = 0
-    for _, row in df.iterrows():
-        nome_raw = str(row[col_hosp]).strip().strip('"')
-        if len(nome_raw) < 3:
-            continue
+    try:
+        db.query(CapacidadeHospital).delete(synchronize_session=False)
+        for _, row in df.iterrows():
+            nome_raw = str(row[col_hosp]).strip().strip('"')
+            if len(nome_raw) < 3:
+                continue
 
-        # Extrai CNES (7 dígitos no início)
-        match = re.match(r'^(\d{7})\s+(.*)', nome_raw)
-        if match:
-            cnes = match.group(1)
-            nome = match.group(2).strip()
-        else:
-            cnes = None
-            nome = nome_raw
+            # Extrai CNES (7 dígitos no início)
+            match = re.match(r'^(\d{7})\s+(.*)', nome_raw)
+            if match:
+                cnes = match.group(1)
+                nome = match.group(2).strip()
+            else:
+                cnes = None
+                nome = nome_raw
 
-        # Total de internações
-        try:
-            total_str = str(row[col_total] if col_total else 0).replace(".", "").replace(",", "").strip()
-            total = int(total_str) if total_str.isdigit() else 0
-        except Exception:
-            total = 0
+            # Total de internações
+            try:
+                total_str = str(row[col_total] if col_total else 0).replace(".", "").replace(",", "").strip()
+                total = int(total_str) if total_str.isdigit() else 0
+            except Exception:
+                total = 0
 
-        if total <= 0:
-            continue
+            if total <= 0:
+                continue
 
-        # Inferir município (fallback)
-        mun_inferido = _inferir_mun_por_nome(nome)
-        cir_inferido = CIR_OFICIAL.get(norm(mun_inferido), "DESCONHECIDO")
+            # Inferir município (fallback)
+            mun_inferido = _inferir_mun_por_nome(nome)
+            cir_inferido = CIR_OFICIAL.get(norm(mun_inferido), "DESCONHECIDO")
 
-        # --- Tenta encontrar hospital na base (pelo CNES ou nome) ---
-        hospital = None
-        if cnes:
-            hospital = db.query(Hospital).filter(Hospital.cnes == cnes).first()
-        if not hospital:
-            hospital = encontrar_hospital_por_nome(nome, mun_inferido, db)
+            # --- Tenta encontrar hospital na base (pelo CNES ou nome) ---
+            hospital = None
+            if cnes:
+                hospital = db.query(Hospital).filter(Hospital.cnes == cnes).first()
+            if not hospital:
+                hospital = encontrar_hospital_por_nome(nome, mun_inferido, db)
 
-        if hospital:
-            hospital_id = hospital.id
-            # Atualiza campos se necessário
-            if cnes and not hospital.cnes:
-                hospital.cnes = cnes
-                hospital.fonte = "combinado"
-            # Marca como cirúrgico e atualiza capacidade
-            hospital.is_cirurgico = True
-        else:
-            # Cria novo hospital (fonte = datasus)
-            hospital = Hospital(
-                cnes=cnes,
-                nome_fantasia=nome,
-                razao_social=None,
-                municipio=mun_inferido,
-                uf="CE",
-                cir=cir_inferido,
-                tipo="publico",
-                fonte="datasus",
-                confiavel=False,
-                atende_sus=True,
-                is_cirurgico=True,
-            )
-            db.add(hospital)
-            db.flush()
-            hospital_id = hospital.id
+            if hospital:
+                hospital_id = hospital.id
+                # Atualiza campos se necessário
+                if cnes and not hospital.cnes:
+                    hospital.cnes = cnes
+                    hospital.fonte = "combinado"
+                # Marca como cirúrgico e atualiza capacidade
+                hospital.is_cirurgico = True
+            else:
+                # Cria novo hospital (fonte = datasus)
+                hospital = Hospital(
+                    cnes=cnes,
+                    nome_fantasia=nome,
+                    razao_social=None,
+                    municipio=mun_inferido,
+                    uf="CE",
+                    cir=cir_inferido,
+                    tipo="publico",
+                    fonte="datasus",
+                    confiavel=False,
+                    atende_sus=True,
+                    is_cirurgico=True,
+                )
+                db.add(hospital)
+                db.flush()
+                hospital_id = hospital.id
 
-        # --- Cria registro de capacidade ---
-        media = round(total / n_meses, 1)
-        capacidade = CapacidadeHospital(
-            hospital_id=hospital_id,
-            cnes=cnes or hospital.cnes,
-            hospital_nome=nome,
-            municipio=hospital.municipio,
-            cir=hospital.cir,
-            tipo=hospital.tipo,
-            total_cirurgias=total,
-            meses=n_meses,
-            media_mensal=media,
-        )
-        db.add(capacidade)
-
-        # --- Registra alias (nome original) para matching futuro ---
-        alias = db.query(HospitalAlias).filter(HospitalAlias.alias_nome == nome_raw).first()
-        if not alias:
-            alias = HospitalAlias(
-                alias_nome=nome_raw,
-                cnes=cnes,
+            # --- Cria registro de capacidade ---
+            media = round(total / n_meses, 1)
+            capacidade = CapacidadeHospital(
+                hospital_id=hospital_id,
+                cnes=cnes or hospital.cnes,
                 hospital_nome=nome,
-                fonte="datasus",
+                municipio=hospital.municipio,
+                cir=hospital.cir,
+                tipo=hospital.tipo,
+                total_cirurgias=total,
+                meses=n_meses,
+                media_mensal=media,
             )
-            db.add(alias)
+            db.add(capacidade)
 
-        imported += 1
-        if imported % 100 == 0:
-            db.commit()
+            # --- Registra alias (nome original) para matching futuro ---
+            alias = db.query(HospitalAlias).filter(HospitalAlias.alias_nome == nome_raw).first()
+            if not alias:
+                alias = HospitalAlias(
+                    alias_nome=nome_raw,
+                    cnes=cnes,
+                    hospital_nome=nome,
+                    fonte="datasus",
+                )
+                db.add(alias)
+                db.flush()
 
-    db.commit()
+            imported += 1
+            if imported % 100 == 0:
+                db.flush()
+
+        if imported == 0:
+            raise ImportacaoInvalida("Nenhum hospital válido no arquivo DATASUS; base anterior mantida")
+        db.commit()
+    except Exception:
+        db.rollback()
+        print("[DATASUS] ❌ Falha na importação — rollback; capacidade anterior preservada.")
+        raise
     print(f"[DATASUS] ✅ {imported} hospitais processados / {db.query(CapacidadeHospital).count()} capacidades inseridas.")
     return imported
 
@@ -591,23 +601,31 @@ def import_datasus(csv_path: str, db: Session) -> int:
 # INTEGRASUS (fila de espera)
 # ═══════════════════════════════════════════════════════════════════════
 
-def import_integrasus(csv_path: str, db: Session) -> int:
+def _valor_texto(row, col) -> str:
+    if not col:
+        return ""
+    v = row.get(col)
+    if v is None or (isinstance(v, float) and pd.isna(v)):
+        return ""
+    return str(v).strip()
+
+
+def _ler_e_validar_integrasus(csv_path: str) -> list:
     """
-    Importa CSV do IntegraSUS (fila de espera cirúrgica)
-    e vincula aos hospitais existentes na tabela Hospital.
+    Lê e valida o CSV sem tocar no banco. Retorna lista de dicts prontos para inserir.
+    Levanta ImportacaoInvalida se o arquivo não puder substituir a fila atual.
     """
     if not os.path.exists(csv_path):
-        print(f"[INTEGRASUS] Arquivo não encontrado: {csv_path}")
-        return 0
+        raise ImportacaoInvalida(f"Arquivo não encontrado: {os.path.basename(csv_path)}")
 
     enc = detect_encoding(csv_path)
-    print(f"[INTEGRASUS] Encoding detectado: {enc}")
+    try:
+        df = pd.read_csv(csv_path, encoding=enc, sep=";", low_memory=False, on_bad_lines='skip')
+    except Exception as e:
+        raise ImportacaoInvalida(f"CSV ilegível: {type(e).__name__}") from e
+    df.columns = [str(c).strip().upper().replace(" ", "_") for c in df.columns]
 
-    df = pd.read_csv(csv_path, encoding=enc, sep=";", low_memory=False, on_bad_lines='skip')
-    df.columns = [c.strip().upper().replace(" ", "_") for c in df.columns]
-
-    print(f"[INTEGRASUS] Colunas: {list(df.columns)}")
-    print(f"[INTEGRASUS] Linhas: {len(df)}")
+    print(f"[INTEGRASUS] Encoding: {enc} | Colunas: {list(df.columns)} | Linhas: {len(df)}")
 
     col_map = {
         "hospital":      ["UNIDADE", "HOSPITAL", "NM_UNIDADE", "ESTABELECIMENTO"],
@@ -620,112 +638,119 @@ def import_integrasus(csv_path: str, db: Session) -> int:
         "data":          ["DT_INCLUSAO", "DATA_INCLUSAO", "DATA_ENTRADA"],
     }
 
-    def get_col(df, options):
+    def get_col(options):
         for o in options:
             if o in df.columns:
                 return o
         return None
 
-    col_hosp  = get_col(df, col_map["hospital"])
-    col_mun   = get_col(df, col_map["municipio"])
-    col_esp   = get_col(df, col_map["especialidade"])
-    col_sw    = get_col(df, col_map["swalis"])
-    col_ini   = get_col(df, col_map["iniciais"])
-    col_jud   = get_col(df, col_map["judicial"])
-    col_proc  = get_col(df, col_map["procedimento"])
-    col_data  = get_col(df, col_map["data"])
+    cols = {k: get_col(v) for k, v in col_map.items()}
+    if not cols["hospital"]:
+        raise ImportacaoInvalida("Coluna de hospital/unidade não encontrada")
+    if not cols["especialidade"]:
+        raise ImportacaoInvalida("Coluna de especialidade não encontrada")
 
-    if not col_hosp:
-        print("[INTEGRASUS] ⚠️  Coluna de hospital não encontrada!")
-        return 0
+    registros = []
+    ignoradas = 0
+    for _, row in df.iterrows():
+        hospital_nome = _valor_texto(row, cols["hospital"])
+        especialidade = _valor_texto(row, cols["especialidade"]).upper()
+        if not hospital_nome or hospital_nome.lower() == "nan" or not especialidade:
+            ignoradas += 1
+            continue
+        judicial = _valor_texto(row, cols["judicial"]).upper() in ["SIM", "S", "1", "TRUE", "X"]
+        registros.append({
+            "iniciais": _valor_texto(row, cols["iniciais"])[:10] or None,
+            "municipio": _valor_texto(row, cols["municipio"]).upper() or "DESCONHECIDO",
+            "hospital_nome": hospital_nome,
+            "especialidade": especialidade,
+            "classif_swalis": _valor_texto(row, cols["swalis"]) or "Categoria D",
+            "judicializado": judicial,
+            "procedimento": _valor_texto(row, cols["procedimento"])[:200] or None,
+            "data_insercao": _valor_texto(row, cols["data"]) or None,
+        })
 
-    # Limpa tabela atual
-    db.query(PacienteFila).delete()
-    db.commit()
+    if not registros:
+        raise ImportacaoInvalida("Nenhuma linha válida no arquivo; fila atual mantida")
+    if ignoradas:
+        print(f"[INTEGRASUS] {ignoradas} linhas ignoradas (sem hospital ou especialidade)")
+    return registros
 
+
+def import_integrasus(csv_path: str, db: Session) -> int:
+    """
+    Importa CSV do IntegraSUS (fila de espera cirúrgica) de forma não destrutiva:
+    1) lê e valida o arquivo inteiro sem tocar no banco;
+    2) numa única transação, substitui a fila, vincula hospitais e recalcula mapas;
+    3) commit só no fim — qualquer erro faz rollback e a fila anterior é preservada.
+    Levanta ImportacaoInvalida se o arquivo for rejeitado.
+    """
+    registros = _ler_e_validar_integrasus(csv_path)
     data_import_str = datetime.now().strftime("%Y-%m-%d")
-    batch = []
     hospital_cache = {}
 
-    for _, row in df.iterrows():
-        judicial = False
-        if col_jud:
-            v = str(row.get(col_jud, "")).upper()
-            judicial = v in ["SIM", "S", "1", "TRUE", "X"]
+    try:
+        db.query(PacienteFila).delete(synchronize_session=False)
 
-        hospital_nome = str(row[col_hosp]).strip() if col_hosp else "N/D"
-        municipio = str(row[col_mun]).upper().strip() if col_mun else "DESCONHECIDO"
+        batch = []
+        for reg in registros:
+            hospital_nome = reg["hospital_nome"]
+            municipio = reg["municipio"]
 
-        # --- Encontrar hospital ---
-        hospital_id = hospital_cache.get(hospital_nome)
-        if hospital_id is None:
-            # Tenta encontrar por alias ou fuzzy
-            hospital = encontrar_hospital_por_nome(hospital_nome, municipio, db)
-            if hospital:
-                hospital_id = hospital.id
-                # Cria alias para facilitar futuros matches
-                alias = HospitalAlias(
-                    alias_nome=hospital_nome,
-                    cnes=hospital.cnes,
-                    hospital_nome=hospital.nome_fantasia,
-                    fonte="integrasus_auto",
-                )
-                db.add(alias)
-            else:
-                # Cria novo hospital (fonte integrasus, não cirúrgico)
-                cir = get_cir_from_municipio(municipio)
-                hospital = Hospital(
-                    nome_fantasia=hospital_nome,
-                    municipio=municipio,
-                    uf="CE",
-                    cir=cir,
-                    fonte="integrasus",
-                    confiavel=False,
-                    atende_sus=True,
-                    is_cirurgico=False,
-                )
-                db.add(hospital)
-                db.flush()
-                hospital_id = hospital.id
-                print(f"[INTEGRASUS] Novo hospital criado: {hospital_nome} (ID {hospital_id})")
-            hospital_cache[hospital_nome] = hospital_id
+            hospital_id = hospital_cache.get(hospital_nome)
+            if hospital_id is None:
+                hospital = encontrar_hospital_por_nome(hospital_nome, municipio, db)
+                if hospital:
+                    hospital_id = hospital.id
+                    existe_alias = db.query(HospitalAlias).filter(
+                        HospitalAlias.alias_nome == hospital_nome).first()
+                    if not existe_alias:
+                        db.add(HospitalAlias(
+                            alias_nome=hospital_nome,
+                            cnes=hospital.cnes,
+                            hospital_nome=hospital.nome_fantasia,
+                            fonte="integrasus_auto",
+                        ))
+                        db.flush()
+                else:
+                    hospital = Hospital(
+                        nome_fantasia=hospital_nome,
+                        municipio=municipio,
+                        uf="CE",
+                        cir=get_cir_from_municipio(municipio),
+                        fonte="integrasus",
+                        confiavel=False,
+                        atende_sus=True,
+                        is_cirurgico=False,
+                    )
+                    db.add(hospital)
+                    db.flush()
+                    hospital_id = hospital.id
+                hospital_cache[hospital_nome] = hospital_id
 
-        # --- Cria paciente ---
-        paciente = PacienteFila(
-            iniciais=str(row[col_ini])[:10] if col_ini else None,
-            municipio=municipio,
-            hospital_nome=hospital_nome,
-            hospital_id=hospital_id,
-            especialidade=str(row[col_esp]).upper().strip() if col_esp else "CIRURGIA GERAL",
-            classif_swalis=str(row[col_sw]).strip() if col_sw else "Categoria D",
-            judicializado=judicial,
-            procedimento=str(row[col_proc])[:200] if col_proc else None,
-            data_insercao=str(row[col_data]) if col_data else None,
-            data_atualizacao=data_import_str,
-        )
-        batch.append(paciente)
+            batch.append(PacienteFila(
+                **reg, hospital_id=hospital_id, data_atualizacao=data_import_str,
+            ))
+            if len(batch) >= 1000:
+                db.bulk_save_objects(batch)
+                batch = []
 
-        if len(batch) >= 1000:
+        if batch:
             db.bulk_save_objects(batch)
-            db.commit()
-            batch = []
+        db.flush()
 
-    if batch:
-        db.bulk_save_objects(batch)
+        hospital_cir_map = build_hospital_cir_map(db)
+        _salvar_hospital_cir_map(hospital_cir_map, db, commit=False)
+        build_hospital_especialidades(db, commit=False)
+
         db.commit()
+    except Exception:
+        db.rollback()
+        print("[INTEGRASUS] ❌ Falha na importação — rollback; fila anterior preservada.")
+        raise
 
-    # Gera HospitalCirMap
-    print("[INTEGRASUS] Calculando CIR dos hospitais pelos municípios dos pacientes...")
-    hospital_cir_map = build_hospital_cir_map(db)
-    _salvar_hospital_cir_map(hospital_cir_map, db)
-
-    # Gera HospitalEspecialidade
-    print("[INTEGRASUS] Construindo mapa de especialidades por hospital...")
-    build_hospital_especialidades(db)
-
-    total = db.query(PacienteFila).count()
-    print(f"[INTEGRASUS] ✅ {total:,} pacientes importados")
-    print(f"[INTEGRASUS] ✅ {len(hospital_cache)} hospitais envolvidos")
+    total = len(registros)
+    print(f"[INTEGRASUS] ✅ {total:,} pacientes importados; {len(hospital_cache)} hospitais envolvidos")
     return total
 
 
@@ -751,9 +776,8 @@ def build_hospital_cir_map(db: Session) -> dict:
     return hospital_cir
 
 
-def _salvar_hospital_cir_map(hospital_cir_map: dict, db: Session):
-    db.query(HospitalCirMap).delete()
-    db.commit()
+def _salvar_hospital_cir_map(hospital_cir_map: dict, db: Session, commit: bool = True):
+    db.query(HospitalCirMap).delete(synchronize_session=False)
     batch = []
     for hosp, info in hospital_cir_map.items():
         batch.append(HospitalCirMap(
@@ -764,11 +788,12 @@ def _salvar_hospital_cir_map(hospital_cir_map: dict, db: Session):
             atualizado_em=datetime.utcnow(),
         ))
     db.bulk_save_objects(batch)
-    db.commit()
+    if commit:
+        db.commit()
     print(f"[INTEGRASUS] HospitalCirMap: {len(batch)} hospitais salvos")
 
 
-def build_hospital_especialidades(db: Session):
+def build_hospital_especialidades(db: Session, commit: bool = True):
     """Constrói tabela HospitalEspecialidade a partir dos pacientes (IntegraSUS)."""
     from database import HospitalEspecialidade
     from sqlalchemy import func
@@ -792,7 +817,6 @@ def build_hospital_especialidades(db: Session):
     db.query(HospitalEspecialidade).filter(
         HospitalEspecialidade.fonte == "integrasus"
     ).delete(synchronize_session=False)
-    db.commit()
 
     batch = []
     for hospital_id, esp, total in rows:
@@ -806,11 +830,11 @@ def build_hospital_especialidades(db: Session):
         ))
         if len(batch) >= 500:
             db.bulk_save_objects(batch)
-            db.commit()
             batch = []
 
     if batch:
         db.bulk_save_objects(batch)
+    if commit:
         db.commit()
     print(f"[ESPECIALIDADES] ✅ {len(rows)} combinações inseridas")
 
@@ -819,25 +843,34 @@ def build_hospital_especialidades(db: Session):
 # AUTO IMPORT E SEEDS (opcional, para testes)
 # ═══════════════════════════════════════════════════════════════════════
 
-def auto_import(db: Session):
+def auto_import(db: Session, importar_datasus: bool = True, importar_fila: bool = True):
+    """Importa os CSVs mais recentes de backend/data/ (sem apagar nada se o CSV faltar)."""
     base = os.path.join(os.path.dirname(__file__), "..", "data")
-    datasus_files = sorted(glob.glob(os.path.join(base, "*datasus*.csv")))
-    if datasus_files:
-        import_datasus(datasus_files[-1], db)
-    else:
-        print("[DATASUS] Nenhum CSV encontrado em data/")
-        _seed_demo_datasus(db)
+    if importar_datasus:
+        datasus_files = sorted(glob.glob(os.path.join(base, "*datasus*.csv")))
+        if datasus_files:
+            try:
+                import_datasus(datasus_files[-1], db)
+            except ImportacaoInvalida as e:
+                print(f"[DATASUS] Arquivo rejeitado: {e}")
+        else:
+            print("[DATASUS] Nenhum CSV encontrado em data/")
+            _seed_demo_datasus(db)
 
-    integra_files = sorted(
-        glob.glob(os.path.join(base, "*fila*.csv")) +
-        glob.glob(os.path.join(base, "*consulta*.csv")) +
-        glob.glob(os.path.join(base, "*integrasus*.csv"))
-    )
-    if integra_files:
-        import_integrasus(integra_files[-1], db)
-    else:
-        print("[INTEGRASUS] Nenhum CSV encontrado em data/")
-        _seed_demo_fila(db)
+    if importar_fila:
+        integra_files = sorted(
+            glob.glob(os.path.join(base, "*fila*.csv")) +
+            glob.glob(os.path.join(base, "*consulta*.csv")) +
+            glob.glob(os.path.join(base, "*integrasus*.csv"))
+        )
+        if integra_files:
+            try:
+                import_integrasus(integra_files[-1], db)
+            except ImportacaoInvalida as e:
+                print(f"[INTEGRASUS] Arquivo rejeitado: {e}")
+        else:
+            print("[INTEGRASUS] Nenhum CSV encontrado em data/")
+            _seed_demo_fila(db)
 
 
 def _seed_demo_fila(db: Session):

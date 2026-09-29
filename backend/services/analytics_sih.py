@@ -83,7 +83,9 @@ logger = logging.getLogger(__name__)
 
 def get_espera_media_real(db: Session) -> Dict[str, float]:
     """
-    Calcula tempo médio (proxy de espera) por especialidade.
+    Permanência hospitalar média (dias_perm do SIH, em meses) por especialidade.
+    ATENÇÃO: é tempo de internação, NÃO tempo de espera na fila. Só retorna
+    especialidades com dado calculado (sem valores fixos de fallback).
     SQLite NÃO suporta percentile_cont/within_group.
     """
     dialect = db.get_bind().dialect.name  # "sqlite", "postgresql", etc.
@@ -104,26 +106,7 @@ def get_espera_media_real(db: Session) -> Dict[str, float]:
     resultado: Dict[str, float] = {}
     for esp, media, total in rows:
         if esp and media:
-            espera_meses = round(float(media) / 30, 1)
-            resultado[esp] = max(espera_meses, 1.0)
-
-    # Fallback para especialidades sem dados
-    fallback = {
-        "ONCOLOGIA": 6.2,
-        "CARDIOVASCULAR": 4.8,
-        "NEUROLOGIA": 5.1,
-        "ORTOPEDIA": 5.5,
-        "UROLOGIA": 3.8,
-        "GINECOLOGIA": 3.2,
-        "OFTALMOLOGIA": 4.1,
-        "CIR DIGESTIVA": 4.5,
-        "BUCOMAXILOFACIAL": 3.0,
-        "CIR PLASTICA REPARADORA": 5.8,
-        "OTORRINOLARINGOLOGIA": 3.5,
-        "TOTAL": 5.2,
-    }
-    for k, v in fallback.items():
-        resultado.setdefault(k, v)
+            resultado[esp] = round(float(media) / 30, 2)
 
     logger.info(f"Espera média calculada para {len(resultado)} especialidades (dialect={dialect})")
     return resultado
@@ -578,9 +561,9 @@ def _interpretar_mape(mape: Optional[float]) -> str:
     if mape is None:
         return "Sem dados suficientes para validação"
     if mape < 10:
-        return f"Excelente precisão ({mape:.1f}%). Supera a meta Centelha de 15%."
+        return f"MAPE de {mape:.1f}% no holdout — abaixo da meta do projeto (15%)."
     if mape < 15:
-        return f"Boa precisão ({mape:.1f}%). Atende a meta Centelha de 15%."
+        return f"MAPE de {mape:.1f}% no holdout — dentro da meta do projeto (15%)."
     if mape < 25:
         return f"Precisão moderada ({mape:.1f}%). Abaixo da meta. Considere mais dados históricos."
     return f"Precisão baixa ({mape:.1f}%). Necessita ajuste do modelo."
@@ -638,8 +621,10 @@ def get_validacao_mape(
         return {
             "especialidade": esp,
             "mape_real": None,
-            "meta_centelha_pct": 15,
-            "aprovado": None,
+            "meta_projeto_mape_pct": 15,
+            "alvo_validado": "contagem mensal de AIH no SIH (produção hospitalar), não a fila",
+            "dentro_da_meta": None,
+            "status": "nao_validado",
             "comparacao_mensal": [],
             "meses_comparados": 0,
             "meses_sem_dados_reais": meses_validacao,
@@ -685,8 +670,10 @@ def get_validacao_mape(
         return {
             "especialidade": esp,
             "mape_real": None,
-            "meta_centelha_pct": 15,
-            "aprovado": None,
+            "meta_projeto_mape_pct": 15,
+            "alvo_validado": "contagem mensal de AIH no SIH (produção hospitalar), não a fila",
+            "dentro_da_meta": None,
+            "status": "nao_validado",
             "comparacao_mensal": [],
             "meses_comparados": 0,
             "meses_sem_dados_reais": meses_validacao,
@@ -718,8 +705,10 @@ def get_validacao_mape(
     return {
         "especialidade": esp,
         "mape_real": mape,
-        "meta_centelha_pct": 15,
-        "aprovado": (mape < 15) if mape is not None else None,
+        "meta_projeto_mape_pct": 15,
+            "alvo_validado": "contagem mensal de AIH no SIH (produção hospitalar), não a fila",
+        "dentro_da_meta": (mape < 15) if mape is not None else None,
+        "status": "calculado" if mape is not None else "nao_validado",
         "comparacao_mensal": comparacao,
         "meses_comparados": len(comparacao),
         "meses_sem_dados_reais": meses_validacao - len(comparacao),

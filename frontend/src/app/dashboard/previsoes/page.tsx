@@ -21,7 +21,8 @@ interface PontoSerie {
 }
 
 interface Metricas {
-  mape_pct: number
+  mape_pct: number | null
+  mape_status?: string
   slope_mensal_pct: number
   fila_atual: number
   fila_proj_6m: number
@@ -136,7 +137,7 @@ export default function PrevisoesPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-text1">Previsões ML</h1>
         <p className="text-sm mt-1" style={{ color: 'var(--text2)' }}>
-          Série histórica 24 meses + projeção 6 meses — regressão linear calibrada com DATASUS + IntegraSUS
+          Série histórica <strong>simulada</strong> de 24 meses (estimada a partir da fila atual e do DATASUS) + projeção 6 meses por regressão linear. Previsão não validada.
         </p>
       </div>
 
@@ -189,18 +190,18 @@ export default function PrevisoesPage() {
             tooltip="Projeção em 6 meses sem intervenção, por regressão linear."
           />
           <KPICard
-            label="Espera Projetada"
+            label="Espera Projetada (simulado)"
             value={m ? `${m.espera_projetada_meses}m` : '—'}
-            detail={m ? `Hoje: ${m.espera_media_atual_meses}m` : ''}
+            detail={m ? `Parâmetro atual: ${m.espera_media_atual_meses}m` : ''}
             color={m && m.espera_projetada_meses > 8 ? 'red' : 'yellow'}
-            tooltip="Tempo médio de espera projetado para novos pacientes."
+            tooltip="Estimativa sobre série simulada; a espera atual é um parâmetro fixo, não medido."
           />
           <KPICard
             label="Acurácia (MAPE)"
-            value={m ? `${m.mape_pct}%` : '—'}
-            detail="Meta ≤ 15%"
-            color={m && m.mape_pct <= 15 ? 'blue' : 'yellow'}
-            tooltip="Mean Absolute Percentage Error. Quanto menor, mais preciso o modelo."
+            value={m ? (m.mape_pct == null ? 'não validado' : `${m.mape_pct}%`) : '—'}
+            detail="Meta do projeto < 15%"
+            color="yellow"
+            tooltip="Erro em dados reais ainda não medido: a série histórica é simulada."
           />
         </div>
       )}
@@ -211,7 +212,7 @@ export default function PrevisoesPage() {
           <div>
             <h2 className="text-base font-semibold">Evolução da Fila Cirúrgica</h2>
             <p className="text-xs mt-0.5" style={{ color: 'var(--text2)' }}>
-              Linha sólida = histórico · tracejada = projeção
+              Linha sólida = histórico simulado · tracejada = projeção
             </p>
           </div>
           {m && m.economia_pacientes_redistrib > 0 && (
@@ -224,7 +225,7 @@ export default function PrevisoesPage() {
                 border: `1px solid ${mostrarRedistrib ? 'rgba(0,255,136,0.3)' : 'var(--border)'}`,
               }}
             >
-              {mostrarRedistrib ? '✓ ' : ''}Cenário c/ redistribuição
+              {mostrarRedistrib ? '✓ ' : ''}Cenário simulado c/ redistribuição
             </button>
           )}
         </div>
@@ -273,7 +274,7 @@ export default function PrevisoesPage() {
                 <Line
                   type="monotone"
                   dataKey="fila_redistrib"
-                  name="Fila (com redistrib.)"
+                  name="Fila (cenário simulado)"
                   stroke="var(--accent2)"
                   strokeWidth={2}
                   strokeDasharray="5 3"
@@ -293,7 +294,7 @@ export default function PrevisoesPage() {
           }}>
             <span>✦</span>
             <span>
-              Com redistribuição CIR-aware: economia de{' '}
+              Cenário simulado (aplica a meta de −40% do crescimento, não é resultado): economia de{' '}
               <strong>{m.economia_pacientes_redistrib.toLocaleString('pt-BR')} pacientes</strong>{' '}
               — fila cai de <strong>{m.fila_proj_6m.toLocaleString('pt-BR')}</strong> para{' '}
               <strong>{m.fila_com_redistrib_6m.toLocaleString('pt-BR')}</strong> em 6 meses
@@ -400,8 +401,8 @@ export default function PrevisoesPage() {
                     </div>
                   </div>
                   <div className="text-xs text-center shrink-0">
-                    <div className="font-mono font-bold" style={{ color: esp.mape_pct <= 15 ? 'var(--accent)' : 'var(--yellow)' }}>
-                      {esp.mape_pct}%
+                    <div className="font-mono font-bold" style={{ color: 'var(--yellow)' }}>
+                      {esp.mape_pct == null ? 'não validado' : `${esp.mape_pct}%`}
                     </div>
                     <div style={{ color: 'var(--text2)' }}>MAPE</div>
                   </div>

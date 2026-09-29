@@ -49,7 +49,7 @@ const fmtR = (n: number) =>
 const fmt = (n: number) => new Intl.NumberFormat("pt-BR").format(n);
 
 export default function SimuladorPage() {
-  const { token, user } = useAuth();
+  const { user } = useAuth();
   const [vagas, setVagas] = useState<Record<string, number>>({
     ORTOPEDIA: 10,
     CARDIOVASCULAR: 5,

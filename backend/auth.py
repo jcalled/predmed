@@ -10,8 +10,10 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from database import get_db, Usuario
+from config import get_secret_key
 
-SECRET_KEY = os.getenv("SECRET_KEY", "predmed-secret-centelha-2026-ekclick")
+# Sem valor padrão fora de APP_ENV=dev: a importação falha se SECRET_KEY faltar (B04).
+SECRET_KEY = get_secret_key()
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 24
 
