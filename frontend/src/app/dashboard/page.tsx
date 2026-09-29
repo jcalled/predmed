@@ -21,7 +21,7 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <div>
-        <PageHeader title="Dashboard" />
+        <PageHeader title="Painel" />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="kpi-card animate-pulse" style={{ height: 100 }} />
@@ -34,7 +34,7 @@ export default function DashboardPage() {
   return (
     <div className="animate-fadein">
       <PageHeader
-        title="Dashboard"
+        title="Painel"
         subtitle={
           isSesa ? 'Visão geral do Ceará — última importação IntegraSUS + DATASUS' :
           user?.role === 'sms' ? `${user.tenant_nome} — ${user.tenant_cir}` :

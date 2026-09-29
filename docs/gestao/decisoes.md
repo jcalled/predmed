@@ -47,6 +47,7 @@ Observação: a instrução original falava em "um único commit limpo"; o remot
 | D09 | 29/09/2026 | Marca da empresa passa a ser **MedOps**; PREDMED segue como nome do produto | Proponente | Identidade da empresa | Tomada | Conferir no Termo de Outorga se a razão social mudou; se sim, comunicar à FUNCAP |
 | D10 | 29/09/2026 | Consolidação de 14 para 7–8 telas **por perfil** (docs/ux/arquitetura-telas.md), sem juntar o que muda por tipo de usuário; simulador de receita vira "Oportunidades SUS" só para hospital particular | Proponente | Usabilidade (meta SUS > 70) e aderência às entregas do plano | Tomada | Designer executa; homologar com os 4 perfis |
 | D11 | 29/09/2026 | **SMS aprova redistribuições dentro da própria CIR**; SESA aprova em todo o estado; hospitais só leem | Proponente | Papel da gestão municipal na regulação regional | Tomada — implementada com testes | Validar com a SESA no piloto |
+| D12 | 29/09/2026 | Vínculo fila→CNES: confiança ALTA definitiva; MEDIA/AMBÍGUO/BAIXA aceitos pela sugestão automática como **provisórios** (marcados para revisão) | Proponente | Avançar a redistribuição com capacidade real sem bloquear em revisão manual | Tomada | Revisar depois, com prioridade para HIF (sugestão provavelmente errada) e Hospital São Raimundo (Crato × Várzea Alegre) |
 
 ## 3. Decisões pendentes do checklist (`docs/CHECKLIST_CONCLUSAO.md`, seção R)
 

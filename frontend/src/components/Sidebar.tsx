@@ -4,33 +4,41 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useRef } from 'react'
 import clsx from 'clsx'
 import {
-  LayoutDashboard, ListOrdered, Target, Map as MapIcon, TrendingUp, BrainCircuit,
-  Building2, Scale, Rocket, FileText, Settings, LogOut, X, MapPin, Check, Minus,
+  LayoutDashboard, ListOrdered, Target, Map as MapIcon, TrendingUp, HandCoins,
+  FileText, Settings, LogOut, X, MapPin, Check, Minus,
   type LucideIcon,
 } from 'lucide-react'
-import { useAuth } from '@/lib/auth'
+import { useAuth, type UserRole } from '@/lib/auth'
 import Wordmark from '@/components/marca/Wordmark'
 
 interface NavItem {
   href: string
   Icone: LucideIcon
   label: string
-  roles?: string[]  // se definido, só aparece para esses roles
+  roles?: UserRole[]  // se definido, só aparece para esses roles
 }
 
+/*
+ * Menu por perfil — docs/ux/arquitetura-telas.md (aprovada em 29/09/2026).
+ * SESA/SMS: 7 itens · hospital público: 6 · hospital particular: 8.
+ * Esconder o item é só organização de tela: quem garante o acesso é o backend.
+ */
 const NAV_ITEMS: NavItem[] = [
-  { href: '/dashboard',                Icone: LayoutDashboard, label: 'Dashboard' },
-  { href: '/dashboard/fila',           Icone: ListOrdered,     label: 'Fila Cirúrgica' },
+  { href: '/dashboard',                Icone: LayoutDashboard, label: 'Painel' },
+  { href: '/dashboard/fila',           Icone: ListOrdered,     label: 'Fila cirúrgica' },
   { href: '/dashboard/priorizacao',    Icone: Target,          label: 'Priorização' },
+  { href: '/dashboard/previsoes',      Icone: TrendingUp,      label: 'Previsão de demanda' },
   { href: '/dashboard/redistribuicao', Icone: MapIcon,         label: 'Redistribuição' },
-  { href: '/dashboard/previsoes',      Icone: TrendingUp,      label: 'Previsões' },
-  { href: '/dashboard/previsoes-ml',   Icone: BrainCircuit,    label: 'Previsões ML', roles: ['sesa', 'sms', 'hospital_publico', 'hospital_particular'] },
-  { href: '/dashboard/hospitais',      Icone: Building2,       label: 'Hospitais' },
-  { href: '/dashboard/judicializados', Icone: Scale,           label: 'Judicializados' },
-  { href: '/dashboard/zerarfilas',     Icone: Rocket,          label: 'Prog. Zerar Filas', roles: ['sesa', 'sms'] },
+  { href: '/dashboard/oportunidades',  Icone: HandCoins,       label: 'Oportunidades SUS', roles: ['hospital_particular'] },
   { href: '/dashboard/relatorios',     Icone: FileText,        label: 'Relatórios' },
-  { href: '/dashboard/configuracoes',  Icone: Settings,        label: 'Configurações', roles: ['hospital_particular', 'sesa', 'sms'] },
+  { href: '/dashboard/configuracoes',  Icone: Settings,        label: 'Configurações', roles: ['sesa', 'sms', 'hospital_particular'] },
 ]
+
+/** Perfis que podem abrir cada rota restrita (usado também pelas telas). */
+export function podeAcessar(href: string, role?: string | null) {
+  const item = NAV_ITEMS.find(i => i.href === href)
+  return !item?.roles || item.roles.includes(role as UserRole)
+}
 
 const ROLE_LABELS: Record<string, { label: string; color: string; rgb: string }> = {
   sesa:                { label: 'SESA — Gestor Estadual', color: 'var(--accent)',  rgb: '0,194,255' },
@@ -48,13 +56,13 @@ interface SidebarProps {
 const SELETOR_FOCAVEL = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 export default function Sidebar({ aberta, aoFechar }: SidebarProps) {
-  const { user, logout, isSesa, isSms, isGestor, isParticular } = useAuth()
+  const { user, logout, isSesa, isSms, isParticular } = useAuth()
   const pathname = usePathname()
   const ref = useRef<HTMLElement>(null)
   const botaoFecharRef = useRef<HTMLButtonElement>(null)
 
   const roleInfo = ROLE_LABELS[user?.role || ''] || ROLE_LABELS.sesa
-  const visibleItems = NAV_ITEMS.filter(item => !item.roles || item.roles.includes(user?.role || ''))
+  const visibleItems = NAV_ITEMS.filter(item => podeAcessar(item.href, user?.role))
 
   // Gaveta: foco inicial no botão fechar, Esc fecha, Tab fica preso dentro.
   useEffect(() => {
@@ -80,10 +88,12 @@ export default function Sidebar({ aberta, aoFechar }: SidebarProps) {
     }
   }, [aberta, aoFechar])
 
+  // Espelha as regras do backend: aprovar = SESA (estado) ou SMS (própria CIR,
+  // decisão D11); importar exige SESA (require_sesa).
   const permissoes = [
-    { ok: isGestor, texto: isSesa ? 'Aprovar transferências (global)' : isSms ? 'Aprovar na sua CIR' : 'Aprovar transferências' },
+    { ok: isSesa || isSms, texto: isSesa ? 'Aprovar redistribuições (estado)' : isSms ? 'Aprovar redistribuições (sua CIR)' : 'Aprovar redistribuições' },
     { ok: isParticular, texto: 'Configurar vagas SUS' },
-    { ok: isGestor, texto: 'Importar dados' },
+    { ok: isSesa, texto: 'Importar dados' },
   ]
 
   return (
@@ -140,7 +150,7 @@ export default function Sidebar({ aberta, aoFechar }: SidebarProps) {
         <nav className="flex-1 py-3 overflow-y-auto" aria-label="Seções">
           <ul>
             {visibleItems.map(({ href, Icone, label }) => {
-              const active = pathname === href
+              const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(`${href}/`))
               return (
                 <li key={href}>
                   <Link

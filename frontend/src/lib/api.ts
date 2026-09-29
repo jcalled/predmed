@@ -135,18 +135,18 @@ export const previsoesMlApi = {
 
 
 // ── Analytics ──────────────────────────────────────────
+// Mortalidade e valor pago SUS saíram da UI (docs/ux/arquitetura-telas.md);
+// os endpoints do backend continuam existindo, mas o frontend não os chama.
 export const analyticsApi = {
-  resumo: () => api.get('/analytics/resumo').then(r => r.data),
   sazonalidade: () => api.get('/analytics/sazonalidade').then(r => r.data),
-  mortalidade: (ano: number) =>
-    api.get('/analytics/mortalidade', { params: { ano } }).then(r => r.data),
+  // Só o volume mensal de internações é exibido (aba Sazonalidade)
   pressaoHistorica: () => api.get('/analytics/pressao-historica').then(r => r.data),
 
-  // ✅ Simulador
+  // Oportunidades SUS (hospital particular) — valores simulados
   simuladorReceita: (vagas: Record<string, number>) =>
     api.post('/analytics/simulador-receita', vagas).then(r => r.data),
 
-  // ✅ Validação (MAPE)
+  // Previsão de demanda → aba Validação do modelo (MAPE, holdout SIH)
   validacaoMape: (especialidade: string, meses: number) =>
     api.get('/analytics/validacao-mape', { params: { especialidade, meses } }).then(r => r.data),
 }

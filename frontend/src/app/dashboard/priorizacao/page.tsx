@@ -1,8 +1,8 @@
 'use client'
-import { Fragment, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import useSWR from 'swr'
 import { Scale, AlertTriangle, ChevronDown, ChevronRight, Info, SearchX } from 'lucide-react'
-import { priorizacaoApi } from '@/lib/api'
+import { priorizacaoApi, judicializadosApi } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
 import KPICard from '@/components/ui/KPICard'
 import Badge, { BadgeSwalis, SWALIS_CATEGORIAS, swalisTom } from '@/components/ui/Badge'
@@ -35,6 +35,9 @@ type Paciente = {
   alertas: string[]
 }
 
+const LIMITE_PADRAO = 50
+const LIMITE_MAXIMO = 200 // teto aceito por GET /priorizacao
+
 function faixaScore(score: number) {
   if (score >= 70) return { cor: 'var(--red)', rotulo: 'alta' }
   if (score >= 50) return { cor: 'var(--yellow)', rotulo: 'média' }
@@ -42,23 +45,40 @@ function faixaScore(score: number) {
 }
 
 export default function PriorizacaoPage() {
-  const { isGestor } = useAuth()
+  const { isGestor, isParticular } = useAuth()
   const [esp, setEsp] = useState('')
   const [onco, setOnco] = useState(false)
+  const [judicial, setJudicial] = useState(false)
   const [aberto, setAberto] = useState<number | null>(null)
+  // Link antigo /dashboard/judicializados redireciona para cá com ?judicializados=1
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('judicializados') === '1') setJudicial(true)
+  }, [])
+  // "Somente judicializados" é filtrado no cliente sobre o campo `judicializado`
+  // já retornado por /priorizacao (o backend não muda). Com o filtro ligado,
+  // pedimos o máximo que a API aceita (200) para cobrir mais casos.
+  const limite = judicial ? LIMITE_MAXIMO : LIMITE_PADRAO
   const { data, error, isValidating, mutate } = useSWR(
-    ['priorizacao', esp, onco],
-    () => priorizacaoApi.get({ limit: 50, especialidade: esp || undefined, apenas_oncologia: onco || undefined }),
+    ['priorizacao', esp, onco, limite],
+    () => priorizacaoApi.get({ limit: limite, especialidade: esp || undefined, apenas_oncologia: onco || undefined }),
     { keepPreviousData: true },
   )
+  // Total de judicializados (agregado do estado) e linhas no escopo do perfil,
+  // para avisar quando algum caso ficou fora dos 200 de maior score.
+  const { data: jud } = useSWR('judicializados', judicializadosApi.get)
 
   const semDados = data === undefined
   const carregandoKpi = semDados && !error
   const dist: Record<string, number> = data?.distribuicao_swalis || {}
   const total = Object.values(dist).reduce((a, b) => a + b, 0)
-  const lista: Paciente[] = data?.top_prioritarios || []
-  const temFiltro = Boolean(esp || onco)
-  const limparFiltros = () => { setEsp(''); setOnco(false) }
+  const avaliados: Paciente[] = data?.top_prioritarios || []
+  const lista = judicial ? avaliados.filter(p => p.judicializado) : avaliados
+  const temFiltro = Boolean(esp || onco || judicial)
+  const limparFiltros = () => { setEsp(''); setOnco(false); setJudicial(false) }
+  // Linhas de judicializados que o perfil pode ver: o estado inteiro, exceto o
+  // hospital particular (só as próprias linhas; /judicializados limita a 100).
+  const judNoEscopo: number | undefined = isParticular ? jud?.pacientes?.length : jud?.total
+  const possivelmenteIncompleto = judicial && !esp && !onco && judNoEscopo != null && lista.length < judNoEscopo
 
   return (
     <div className="animate-fadein">
@@ -83,7 +103,7 @@ export default function PriorizacaoPage() {
       </div>
 
       {/* Resumo */}
-      <div className="grid grid-cols-1 min-[420px]:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+      <div className="grid grid-cols-1 min-[420px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4 mb-6">
         <KPICard label="Avaliados" value={data?.total_avaliados ?? '—'} detail="Pacientes com score calculado" color="blue"
           status="medido" carregando={carregandoKpi} />
         <KPICard label="Score ≥ 70" value={data?.resumo?.score_70_ou_mais ?? '—'} detail="Maior prioridade combinada" color="red"
@@ -93,6 +113,9 @@ export default function PriorizacaoPage() {
           status="medido" carregando={carregandoKpi} />
         <KPICard label="Datas a confirmar" value={data?.resumo?.datas_a_confirmar ?? '—'} detail="Numeração antiga da regulação" color="blue"
           status="medido" carregando={carregandoKpi} />
+        <KPICard label="Judicializados" value={jud?.total ?? '—'} detail="Ordens judiciais na fila do estado" color="red"
+          status="medido" carregando={jud === undefined}
+          tooltip="Total agregado do estado. Use o filtro “Somente judicializados” para ver os casos na lista." />
       </div>
 
       {/* Distribuição SWALIS */}
@@ -135,12 +158,35 @@ export default function PriorizacaoPage() {
           <input type="checkbox" className="w-4 h-4" style={{ accentColor: 'var(--accent)' }} checked={onco} onChange={e => setOnco(e.target.checked)} />
           Somente oncologia
         </label>
+        <label className="text-sm flex items-center gap-2 h-[42px]" style={{ color: 'var(--text2)' }}>
+          <input type="checkbox" className="w-4 h-4" style={{ accentColor: 'var(--accent)' }} checked={judicial} onChange={e => setJudicial(e.target.checked)} />
+          <Scale size={14} aria-hidden="true" />
+          Somente judicializados
+        </label>
       </form>
+
+      {judicial && (
+        <div className="card mb-4 text-xs flex gap-3 items-start" style={{ borderColor: 'rgba(255,107,107,0.45)', color: 'var(--text2)' }} role="note">
+          <Scale size={16} aria-hidden="true" className="flex-shrink-0 mt-0.5" style={{ color: 'var(--red)' }} />
+          <div>
+            Casos com ordem judicial recebem pontos extras no score, mas <strong style={{ color: 'var(--text)' }}>não furam a fila automaticamente</strong>:
+            o prazo de cada ordem deve ser conferido no processo. O filtro busca entre os {LIMITE_MAXIMO} pacientes de maior score.
+            {possivelmenteIncompleto && (
+              <div className="mt-1" style={{ color: 'var(--yellow)' }}>
+                Há {judNoEscopo!.toLocaleString('pt-BR')} casos judicializados visíveis para o seu perfil e {lista.length.toLocaleString('pt-BR')} estão entre os {LIMITE_MAXIMO} primeiros.
+                Os demais têm score menor; refine por especialidade para encontrá-los.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Lista priorizada */}
       <div className="card" aria-busy={isValidating}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-4">
-          <h2 className="text-base font-semibold">Top 50 por score</h2>
+          <h2 className="text-base font-semibold">
+            {judicial ? `Judicializados entre os ${LIMITE_MAXIMO} de maior score` : `Top ${LIMITE_PADRAO} por score`}
+          </h2>
           <span className="text-xs" style={{ color: 'var(--text2)' }}>Empate: quem espera há mais tempo vem primeiro</span>
         </div>
         {error && semDados ? (
@@ -152,7 +198,7 @@ export default function PriorizacaoPage() {
             <EstadoVazio
               icone={<SearchX size={32} strokeWidth={1.5} />}
               titulo="Nenhum paciente corresponde aos filtros"
-              descricao="Tente outra especialidade ou desmarque “Somente oncologia”."
+              descricao="Tente outra especialidade ou desmarque os filtros “Somente oncologia” e “Somente judicializados”."
               acao={<button type="button" className="btn-primary text-xs" onClick={limparFiltros}>Limpar filtros</button>}
             />
           ) : isGestor ? (
@@ -169,7 +215,7 @@ export default function PriorizacaoPage() {
             <TabelaRolavel rotulo="Pacientes ordenados por score de prioridade">
               <table className="table-predmed" style={{ opacity: isValidating ? 0.6 : 1 }}>
                 <caption className="sr-only">
-                  Top 50 pacientes por score de prioridade (regra v0.1, não validada). Cada linha tem um botão para ver a justificativa do score.
+                  {judicial ? 'Pacientes judicializados' : `Top ${LIMITE_PADRAO} pacientes`} por score de prioridade (regra v0.1, não validada). Cada linha tem um botão para ver a justificativa do score.
                 </caption>
                 <thead>
                   <tr>
