@@ -2,7 +2,7 @@
 
 Versão: 29/09/2026. Scripts: `backend/_SCRIPTS/coleta_datasus.py`, `cnes_capacidade.py`, `casar_estabelecimentos_cnes.py`.
 Usos: funcionalidade 3 (redistribuição), com a capacidade instalada real, e funcionalidade 1 (previsão), com a série SIH atualizada.
-Nada foi carregado em `predmed.db` nem em `predmed-original.db`. Os arquivos brutos e processados ficam em `~/PredmedDados/datasus/`, fora do git.
+Os arquivos brutos e processados ficam em `~/PredmedDados/datasus/`, fora do git. `predmed-original.db` só é lido (modo `ro`). Em 29/09/2026 foram carregados no `predmed.db` a capacidade CNES, o vínculo fila→CNES e a série de produção cirúrgica (seção **Carga no predmed.db**).
 
 ## Fontes verificadas (FTP público do DATASUS, testado em 28–29/09/2026)
 
@@ -121,9 +121,33 @@ Método: normalização (acentos, pontuação, abreviações HOSP/MATERN/MUNIC/D
 
 Consequência: o vínculo tenant→hospital e a capacidade por hospital que usam essa tabela hoje podem estar atribuídos ao estabelecimento errado.
 
+## Carga no predmed.db (29/09/2026)
+
+Backup anterior: `~/PredmedDados/backups/predmed_antes_vinculo_cnes_202609290922.db` (chmod 600).
+Script idempotente: `backend/_SCRIPTS/carregar_vinculo_cnes.py --backup-feito` (`--simular` faz rollback; `--somente-alta` não grava provisórios). Regras em `backend/services/cnes_vinculo.py`; testes em `backend/tests/test_vinculo_cnes.py`.
+
+**Tabela `cnes_capacidade`** (nova, `create_all`, compatível com PostgreSQL): 16.520 linhas da competência 2026-08, chave única (competência, CNES). Cada carga substitui só as competências presentes no CSV.
+
+**Vínculo** (decisão do responsável de 29/09/2026: aceitar as sugestões, mas marcar as não-ALTA como provisórias):
+
+| Situação no `hospital_alias` | Fonte / confiança | Estabelecimentos | Registros da fila |
+|---|---|---:|---:|
+| Definitivo automático | `cnes_casamento_v1` / ALTA | 163 | 55.647 |
+| Provisório (1º candidato) | `cnes_auto_provisorio` / MEDIA | 12 | 3.967 |
+| Provisório (1º candidato) | `cnes_auto_provisorio` / AMBIGUO | 7 | 1.020 |
+| Provisório (1º candidato) | `cnes_auto_provisorio` / BAIXA | 7 | 1.097 |
+| Sem CNES | SEM_CORRESPONDENCIA | 5 | 25 |
+
+- `pacientes_fila.cnes` preenchido em 61.731 de 61.756 registros; a nova coluna `pacientes_fila.cnes_confianca` diz a origem (`ALTA`, `MANUAL` ou `PROVISORIO_<confiança>`; 6.084 registros provisórios).
+- Os 12 aliases `integrasus_auto` errados foram corrigidos: 9 por vínculo ALTA e 3 por provisórios (Santa Casa de Sobral, Hospital Nova Saúde, Instituto Lucena).
+- **Provável erro, revisar primeiro** (`metodo = PROVAVEL_ERRO_REVISAR`): "HOSPITAL INFANTIL LUCIA DE FATIMA HIF" (sugestão SOPAI parece errada) e "HOSPITAL SAO RAIMUNDO" (homônimos em Crato e Várzea Alegre). O tenant de demonstração "Hospital São Raimundo" (Fortaleza) **não** foi vinculado a nenhum CNES.
+- Vínculo manual (`fonte = manual` ou `revisao_manual`) nunca é sobrescrito. Para corrigir um caso: gravar o alias com `fonte='manual'` e o CNES correto; a próxima carga da fila já o aplica.
+- `import_integrasus` chama `aplicar_cnes_na_fila` a cada nova coleta: a fila recebe o CNES dos aliases ALTA, manuais e provisórios. Nome novo, que não está no CSV, fica sem CNES até rodar de novo `casar_estabelecimentos_cnes.py` e o carregador.
+- Para cada CNES vinculado sem linha em `hospitais`, foi criada uma (fonte `cnes`, dados do `cnes_capacidade`): 95 linhas novas. `pacientes_fila.hospital_id` passou a apontar para o hospital do CNES. O escopo de tenant continua por nome (`main.py`) e não foi alterado.
+
 ## Próximos passos
 
-1. SESA/equipe revisa os 31 casos (MEDIA/AMBIGUO/BAIXA/SEM) no relatório. Depois disso, criar um carregador `vinculo_fila_cnes.csv` → `hospital_alias` (fonte `cnes_casamento_v1`), com backup do `predmed.db`, e substituir os 37 aliases `integrasus_auto`.
-2. Criar a tabela `cnes_capacidade` no banco e trocar a "capacidade ociosa" inferida (`capacidade_hospitais`) por produção SIH ÷ capacidade CNES, com hipóteses explícitas e rótulo "estimado".
-3. Série de previsão: agregado mensal SIH 2019-01 → 2026-07 por especialidade e grupo SIGTAP a partir dos `.dbc`, com backtesting por corte temporal. As últimas 1–2 competências são provisórias.
+1. SESA/equipe revisa os 26 provisórios e os 5 sem correspondência (relatório `vinculo-fila-cnes-revisao.md`), começando pelos 2 marcados como provável erro; correções entram como alias `manual`.
+2. Trocar a "capacidade ociosa" inferida (`capacidade_hospitais`) por produção SIH ÷ capacidade CNES (`cnes_capacidade`), com hipóteses explícitas e rótulo "estimado".
+3. Série de previsão: feita — ver `docs/dados/previsao-demanda-v1.md`.
 4. Instalar o plist (coordenador) e, na AWS, migrar para agendamento + S3.

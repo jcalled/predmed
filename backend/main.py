@@ -937,15 +937,17 @@ def analytics_simulador_receita(
 def analytics_validacao_mape(
     especialidade: Optional[str] = None,
     meses: int = 6,
+    carater: str = "TODOS",
     user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
-    MAPE calculado: compara previsão do modelo vs dados SIH realizados.
-    Meta do projeto (proposta Centelha): MAPE < 15%.
+    MAPE fora da amostra: previsão vs produção cirúrgica realizada no SIH (avaliação
+    versionada em backend/avaliacoes/previsao_demanda; relatório docs/dados/previsao-demanda-v1.md).
+    Meta do projeto (proposta Centelha): MAPE < 15%. carater: TODOS | ELETIVO.
     """
     from services.analytics_sih import get_validacao_mape
-    return get_validacao_mape(db, especialidade=especialidade, meses_validacao=meses)
+    return get_validacao_mape(db, especialidade=especialidade, meses_validacao=meses, carater=carater)
 
 
 @app.get("/analytics/espera-media")

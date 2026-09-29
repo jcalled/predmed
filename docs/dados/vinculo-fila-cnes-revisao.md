@@ -4,6 +4,8 @@ Gerado por `backend/_SCRIPTS/casar_estabelecimentos_cnes.py` em 29/09/2026. CNES
 
 Método e limiares: ver `docs/dados/datasus-cnes-sih.md` (seção Vínculo). ALTA = similaridade ≥ 0,93 e margem ≥ 0,05 sobre o 2º candidato; MEDIA = ≥ 0,80 e margem ≥ 0,03; AMBIGUO = nome igual (≥ 0,93) em mais de um CNES; BAIXA = ≥ 0,55; abaixo disso ou nome genérico = SEM_CORRESPONDENCIA. Nunca recebem ALTA: CNES ausente do ST da competência (inativo/sem envio) e homônimo ativo desempatado só pela residência dos pacientes (ficam MEDIA).
 
+**Situação em 29/09/2026:** por decisão do responsável, as sugestões MEDIA, AMBIGUO e BAIXA abaixo (1º candidato) foram carregadas no `predmed.db` como **provisórias** (`hospital_alias.fonte = cnes_auto_provisorio`, confiança original preservada; `pacientes_fila.cnes_confianca = PROVISORIO_<confiança>`). SEM_CORRESPONDENCIA ficou sem CNES. **Provável erro, revisar primeiro:** "HOSPITAL INFANTIL LUCIA DE FATIMA HIF" (sugestão SOPAI parece errada) e "HOSPITAL SAO RAIMUNDO" (Crato × Várzea Alegre). A correção é gravar o alias com `fonte = manual`, que nunca é sobrescrito (ver `datasus-cnes-sih.md`, seção Carga).
+
 ## Resumo
 
 | Confiança | Estabelecimentos | % | Registros da fila | % |

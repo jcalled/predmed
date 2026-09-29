@@ -603,14 +603,23 @@ def _get_serie_sih_mensal(
 def get_validacao_mape(
     db: Session,
     especialidade: Optional[str] = None,
-    meses_validacao: int = 6
+    meses_validacao: int = 6,
+    carater: str = "TODOS",
 ) -> Dict:
     """
-    Valida MAPE comparando PREVISTO vs REAL no SIH, usando HOLDOUT:
-    - pega a série mensal real do SIH (contagem de AIH por mês)
-    - treina Holt-Winters em tudo EXCETO os últimos N meses disponíveis no SIH
-    - prevê esses N meses e compara (MAPE)
+    MAPE fora da amostra da previsão de demanda.
+
+    1) Se existir avaliação versionada (backend/avaliacoes/previsao_demanda/avaliacao_*.json,
+       gerada por _SCRIPTS/avaliar_previsao_demanda.py), devolve ESSA avaliação — a mesma do
+       relatório docs/dados/previsao-demanda-v1.md (backtesting com origem móvel, h = 1..3 meses).
+       Nesse caso `meses_validacao` é ignorado: a janela de teste é a da avaliação.
+    2) Sem avaliação gravada: cálculo ad hoc (holdout dos últimos N meses de aih_registro).
     """
+    from services.previsao_avaliacao import validacao_para_api
+    versionada = validacao_para_api(especialidade, carater=carater)
+    if versionada is not None:
+        return versionada
+
     esp = (especialidade or "TOTAL").upper()
 
     meses, y = _get_serie_sih_mensal(db, esp)

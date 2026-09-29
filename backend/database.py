@@ -4,7 +4,7 @@ Em produção: trocar DATABASE_URL por PostgreSQL
 """
 from sqlalchemy import (
     create_engine, Column, Integer, String, Float,
-    Boolean, DateTime, ForeignKey, Text, Index, Date
+    Boolean, DateTime, ForeignKey, Text, Index, Date, UniqueConstraint
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
@@ -76,6 +76,8 @@ class PacienteFila(Base):
     # False quando o pedido vem das numerações legadas (3 a 6 dígitos), cujas datas
     # não seguem a ordem do nº de solicitação; ver docs/dados/coleta-integrasus.md
     data_confiavel   = Column(Boolean, nullable=True)
+    # Origem do CNES (services/cnes_vinculo.py): ALTA | MANUAL | PROVISORIO_<confiança>
+    cnes_confianca   = Column(String(24), nullable=True)
     
     hospital_id = Column(Integer, ForeignKey("hospitais.id"), nullable=True, index=True)
     hospital = relationship("Hospital", back_populates="pacientes")
@@ -336,8 +338,93 @@ class HospitalAlias(Base):
     cnes            = Column(String(10), index=True, nullable=True)   # link direto com HospitalCNES.cnes
     hospital_nome   = Column(String, index=True, nullable=True)       # nome canônico (se você quiser)
 
-    fonte           = Column(String, nullable=True)  # "integrasus" | "datasus" | "manual"
+    fonte           = Column(String, nullable=True)  # "integrasus" | "datasus" | "manual" | "cnes_casamento_v1"
     atualizado_em   = Column(DateTime, default=datetime.utcnow)
+    # Vínculo nome da fila → CNES (services/cnes_vinculo.py). Só ALTA e manual
+    # propagam o CNES para pacientes_fila; demais ficam para revisão humana.
+    confianca       = Column(String(20), nullable=True)  # ALTA | MEDIA | AMBIGUO | BAIXA | SEM_CORRESPONDENCIA | REVISAR | MANUAL
+    metodo          = Column(String(40), nullable=True)
+    competencia_cnes = Column(String(7), nullable=True)  # competência do CNES usada no casamento
+
+
+# ──────────────────────────────────────────────
+# CAPACIDADE INSTALADA CNES (cadastro, não disponibilidade)
+# Fonte: CNES ST/LT/HB (DATASUS), gerada por _SCRIPTS/cnes_capacidade.py
+# e carregada por _SCRIPTS/carregar_cnes_capacidade.py.
+# ──────────────────────────────────────────────
+class CnesCapacidade(Base):
+    __tablename__ = "cnes_capacidade"
+    __table_args__ = (
+        UniqueConstraint("competencia", "cnes", name="uq_cnes_capacidade_comp_cnes"),
+        Index("ix_cnes_capacidade_cir", "cir_ads_predmed"),
+    )
+
+    id                          = Column(Integer, primary_key=True)
+    competencia                 = Column(String(7), nullable=False, index=True)  # "2026-08"
+    cnes                        = Column(String(10), nullable=False, index=True)
+    nome_fantasia               = Column(String(200))
+    razao_social                = Column(String(200))
+    codufmun                    = Column(String(6), index=True)
+    municipio                   = Column(String(80), index=True)
+    cir_ads_predmed             = Column(String(80))
+    regiao_saude_cnes           = Column(String(80))
+    macrorregiao_cnes           = Column(String(80))
+    tp_unid                     = Column(String(4))
+    tipo_unidade                = Column(String(120))
+    natureza                    = Column(String(40))   # PUBLICO | PRIVADO | SEM_FINS_LUCRATIVOS | PESSOA_FISICA
+    nat_jur                     = Column(String(6))
+    esfera_adm                  = Column(String(4))
+    vinculo_sus                 = Column(Boolean)
+    relevante_cirurgia          = Column(Boolean)
+    centro_cirurgico            = Column(Boolean)
+    salas_cirurgicas            = Column(Integer, default=0)
+    salas_recuperacao           = Column(Integer, default=0)
+    leitos_recuperacao          = Column(Integer, default=0)
+    salas_cirurgia_ambulatorial = Column(Integer, default=0)
+    salas_pequena_cirurgia      = Column(Integer, default=0)
+    salas_cirurgia_obstetrica   = Column(Integer, default=0)
+    leitos_cirurgicos_st        = Column(Integer, default=0)
+    leitos_cirurgicos_exist     = Column(Integer, default=0)
+    leitos_cirurgicos_sus       = Column(Integer, default=0)
+    leitos_total_exist          = Column(Integer, default=0)
+    leitos_total_sus            = Column(Integer, default=0)
+    leitos_complementares_exist = Column(Integer, default=0)
+    leitos_complementares_sus   = Column(Integer, default=0)
+    n_habilitacoes              = Column(Integer, default=0)
+    hab_oncologia               = Column(Boolean, default=False)
+    hab_cardiovascular          = Column(Boolean, default=False)
+    hab_traumato_ortopedia      = Column(Boolean, default=False)
+    hab_neurocirurgia           = Column(Boolean, default=False)
+    hab_oftalmologia            = Column(Boolean, default=False)
+    hab_bariatrica              = Column(Boolean, default=False)
+    hab_transplante             = Column(Boolean, default=False)
+    hab_videocirurgia           = Column(Boolean, default=False)
+    hab_uti_adulto              = Column(Boolean, default=False)
+    hab_pnrf_eletivas           = Column(Boolean, default=False)
+    habilitacoes                = Column(Text)
+    carregado_em                = Column(DateTime, default=datetime.utcnow)
+
+
+# ──────────────────────────────────────────────
+# SÉRIE MENSAL DE PRODUÇÃO CIRÚRGICA (SIH-RD, grupo SIGTAP 04) — só agregados
+# Gerada por _SCRIPTS/serie_producao_cirurgica.py. Alvo da previsão v1.
+# ──────────────────────────────────────────────
+class SerieProducaoCirurgica(Base):
+    __tablename__ = "serie_producao_cirurgica"
+    __table_args__ = (
+        UniqueConstraint("competencia", "especialidade", "carater",
+                         name="uq_serie_prod_cir"),
+    )
+
+    id            = Column(Integer, primary_key=True)
+    competencia   = Column(String(7), nullable=False, index=True)   # ANO_CMPT-MES_CMPT (processamento)
+    especialidade = Column(String(60), nullable=False, index=True)  # especialidade da fila ou TOTAL
+    carater       = Column(String(12), nullable=False)              # TODOS | ELETIVO | URGENCIA
+    aihs          = Column(Integer, nullable=False, default=0)
+    valor_total   = Column(Float, default=0)
+    fonte         = Column(String(80))                               # arquivo(s)/base de origem
+    provisoria    = Column(Boolean, default=False)                   # competência sujeita a complementação
+    gerado_em     = Column(DateTime, default=datetime.utcnow)
 
 
 # ──────────────────────────────────────────────
@@ -358,6 +445,12 @@ _COLUNAS_NOVAS = {
         "posicao_fila": "INTEGER",
         "solicitacao_hash": "VARCHAR(64)",
         "data_confiavel": "BOOLEAN",
+        "cnes_confianca": "VARCHAR(24)",
+    },
+    "hospital_alias": {
+        "confianca": "VARCHAR(20)",
+        "metodo": "VARCHAR(40)",
+        "competencia_cnes": "VARCHAR(7)",
     },
 }
 

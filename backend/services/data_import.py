@@ -845,6 +845,10 @@ def import_integrasus(csv_path: str, db: Session) -> int:
             db.bulk_save_objects(batch)
         db.flush()
 
+        # Vínculo nome → CNES já revisado (ALTA ou manual) vale para cada nova carga.
+        from services.cnes_vinculo import aplicar_cnes_na_fila
+        aplicar_cnes_na_fila(db)
+
         hospital_cir_map = build_hospital_cir_map(db)
         _salvar_hospital_cir_map(hospital_cir_map, db, commit=False)
         build_hospital_especialidades(db, commit=False)
