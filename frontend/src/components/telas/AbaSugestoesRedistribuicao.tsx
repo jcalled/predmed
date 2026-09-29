@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import useSWR from 'swr'
 import { redistApi } from '@/lib/api'
 import KPICard from '@/components/ui/KPICard'
+import SeloDado from '@/components/ui/SeloDado'
 
 // Componente de Tooltip customizado
 const Tooltip = ({ children, text, position = 'top' }: { children: React.ReactNode, text: string, position?: 'top' | 'bottom' | 'left' | 'right' }) => {
@@ -117,7 +118,15 @@ interface Sugestao {
   especialidade: string
   qtd_sugerida: number
   capacidade_livre: number
-  reducao_espera_dias: number
+  reducao_espera_dias: number | null
+  // Redistribuição v1 (docs/dados/redistribuicao-v1.md)
+  capacidade_natureza?: 'estimada' | 'declarada'
+  tenant_destino_id?: number | null
+  vinculo_provisorio?: boolean
+  excedente_origem?: number
+  fila_especialidade_origem?: number
+  producao_especialidade_destino_mes?: number | null
+  ociosidade_destino_mes?: number | null
   aih_estimada: number        // simulado: R$ 1.500 fixo por AIH
   aih_estimada_origem?: string
   distancia_km: number | null // ainda não calculada
@@ -310,6 +319,7 @@ export default function AbaSugestoesRedistribuicao() {
           const r = await redistApi.aprovar({
             hospital_origem: s.origem.hospital_nome,
             hospital_destino: s.destino.hospital_nome,
+            tenant_destino_id: s.tenant_destino_id ?? undefined,
             especialidade: s.especialidade,
             qtd_pacientes: s.qtd_sugerida,
           })
@@ -353,6 +363,7 @@ export default function AbaSugestoesRedistribuicao() {
       const res = await redistApi.aprovar({
         hospital_origem: modalSugestao.origem.hospital_nome,
         hospital_destino: modalSugestao.destino.hospital_nome,
+        tenant_destino_id: modalSugestao.tenant_destino_id ?? undefined,
         especialidade: modalSugestao.especialidade,
         qtd_pacientes: modalSugestao.qtd_sugerida,
       })
@@ -449,13 +460,13 @@ export default function AbaSugestoesRedistribuicao() {
           />
 
           <KPICard
-            label="Dias de Espera Evitados (simulado)"
-            value={`${(sugestoesFiltradas.reduce((acc, s) => acc + s.reducao_espera_dias * s.qtd_sugerida, 0) / 30).toFixed(0)} meses`}
-            detail={`${sugestoesFiltradas.reduce((acc, s) => acc + s.reducao_espera_dias, 0)} dias totais`}
-            icon="⏱️"
+            label="Ociosidade estimada"
+            value={`${(data?.ociosidade_total_mes ?? 0).toLocaleString('pt-BR')}/mês`}
+            detail={`${data?.hospitais_com_ociosidade ?? 0} hospitais (CNES + SIH)`}
+            icon="🏥"
             color="green"
-            tooltip="Estimativa heurística (fila ÷ produção mensal); não validada"
-            status="simulado"
+            tooltip="Folga mensal estimada pelo menor de três limites (produção já demonstrada, salas e leitos cirúrgicos SUS). Não é vaga confirmada."
+            status="estimado"
           />
 
           <KPICard
@@ -641,23 +652,27 @@ export default function AbaSugestoesRedistribuicao() {
         </button>
       </div>
 
-      {/* Explicação expandida */}
+      {/* Explicação expandida: metodologia da redistribuição v1 (vem da API) */}
       {mostrarExplicacao && (
-        <div className="mb-4 p-4 rounded-lg" style={{ background: 'rgba(0,194,255,0.03)', border: '1px solid rgba(0,194,255,0.1)' }}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-3 rounded-lg" style={{ background: PRIORIDADE_CONFIG.mesma_regiao.bgColor, border: `1px solid ${PRIORIDADE_CONFIG.mesma_regiao.borderColor}` }}>
-              <h3 className="text-sm font-semibold mb-2" style={{ color: PRIORIDADE_CONFIG.mesma_regiao.color }}>🔵 Mesma Região (CIR)</h3>
-              <p className="text-xs" style={{ color: 'var(--text2)' }}>Transferência dentro da mesma CIR. Prioridade máxima por manter o paciente na sua região de origem, seguindo a hierarquia do SUS e minimizando deslocamentos.</p>
-            </div>
-            <div className="p-3 rounded-lg" style={{ background: PRIORIDADE_CONFIG.mesma_macro.bgColor, border: `1px solid ${PRIORIDADE_CONFIG.mesma_macro.borderColor}` }}>
-              <h3 className="text-sm font-semibold mb-2" style={{ color: PRIORIDADE_CONFIG.mesma_macro.color }}>🟢 Mesma Macrorregião</h3>
-              <p className="text-xs" style={{ color: 'var(--text2)' }}>Transferência para outra CIR, mas dentro da mesma Macrorregião de saúde. Segunda prioridade, respeitando o planejamento regional.</p>
-            </div>
-            <div className="p-3 rounded-lg" style={{ background: PRIORIDADE_CONFIG.outra_macro.bgColor, border: `1px solid ${PRIORIDADE_CONFIG.outra_macro.borderColor}` }}>
-              <h3 className="text-sm font-semibold mb-2" style={{ color: PRIORIDADE_CONFIG.outra_macro.color }}>🟡 Outra Macrorregião</h3>
-              <p className="text-xs" style={{ color: 'var(--text2)' }}>Transferência para uma Macrorregião diferente. Última prioridade, usada apenas quando não há capacidade ociosa nas regiões mais próximas.</p>
-            </div>
+        <div className="mb-4 p-4 rounded-lg text-xs" style={{ background: 'rgba(0,194,255,0.03)', border: '1px solid rgba(0,194,255,0.1)', color: 'var(--text2)' }}>
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Como as sugestões são calculadas</h3>
+            <SeloDado natureza="estimado" />
+            {data?.metodologia?.versao && <span className="font-mono">{data.metodologia.versao}</span>}
           </div>
+          <p className="mb-2">
+            Só entre hospitais da <strong style={{ color: 'var(--text)' }}>mesma CIR</strong>. A capacidade ociosa é estimada com dados reais
+            (fila IntegraSUS por estabelecimento, produção cirúrgica SUS no SIH e salas/leitos/habilitações do CNES), mas não é vaga confirmada:
+            agenda, equipe e turnos precisam ser confirmados com o hospital. Vagas informadas por hospital particular aparecem como “declaradas”.
+          </p>
+          {Array.isArray(data?.metodologia?.hipoteses) && (
+            <ul className="list-disc ml-4 space-y-1">
+              {(data.metodologia.hipoteses as string[]).map(h => <li key={h}>{h}</li>)}
+            </ul>
+          )}
+          {data?.metodologia?.fontes && (
+            <p className="mt-2">Fontes: {data.metodologia.fontes.producao}; {data.metodologia.fontes.capacidade}.</p>
+          )}
         </div>
       )}
 
@@ -666,6 +681,7 @@ export default function AbaSugestoesRedistribuicao() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <h2 className="text-base font-semibold">🗺️ Sugestões de Redistribuição</h2>
+            <SeloDado natureza="estimado" />
             <InfoIcon text="Sugestões geradas pelo algoritmo de IA baseado no índice de pressão e capacidade ociosa" />
           </div>
           <div className="flex gap-2">
@@ -769,7 +785,18 @@ export default function AbaSugestoesRedistribuicao() {
                         </span>
                       </div>
                       <div className="text-xs mt-1" style={{ color: 'var(--text2)' }}>
-                        {s.origem.fila_atual} na fila · {s.especialidade}
+                        {s.fila_especialidade_origem ?? s.origem.fila_atual} na fila de {s.especialidade}
+                        {s.excedente_origem != null && <> · excedente {s.excedente_origem}</>}
+                      </div>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {s.vinculo_provisorio && (
+                          <span className="badge" style={{ background: 'rgba(255,215,0,0.1)', color: 'var(--yellow)' }}
+                            title="Nome da fila ligado ao CNES por correspondência ainda não confirmada">vínculo CNES provisório</span>
+                        )}
+                        <span className="badge" style={{ background: 'rgba(0,194,255,0.08)', color: 'var(--accent)' }}
+                          title={s.capacidade_natureza === 'declarada' ? 'Vagas SUS informadas pelo hospital de destino' : 'Ociosidade estimada (CNES + SIH); confirmar com o hospital'}>
+                          {s.capacidade_natureza === 'declarada' ? 'vagas declaradas' : 'capacidade estimada'}
+                        </span>
                       </div>
                     </div>
 
@@ -781,11 +808,14 @@ export default function AbaSugestoesRedistribuicao() {
                           {s.qtd_sugerida} pacientes
                         </div>
                       </Tooltip>
-                      <Tooltip text={`Redução estimada de ${s.reducao_espera_dias} dias na fila de espera`}>
-                        <div className="text-xs cursor-help" style={{ color: 'var(--text2)' }}>
-                          ↓ {s.reducao_espera_dias}d espera
-                        </div>
-                      </Tooltip>
+                      <div className="text-2xs" style={{ color: 'var(--text2)' }}>por mês</div>
+                      {s.reducao_espera_dias != null && (
+                        <Tooltip text={`Heurística (simulado): ${s.qtd_sugerida} pacientes equivalem a ${s.reducao_espera_dias} dias da produção da origem nesta especialidade. Não é redução de espera medida.`}>
+                          <div className="text-xs cursor-help" style={{ color: 'var(--text2)' }}>
+                            ≈ {s.reducao_espera_dias}d de produção (simulado)
+                          </div>
+                        </Tooltip>
+                      )}
                     </div>
 
                     {/* Destino */}

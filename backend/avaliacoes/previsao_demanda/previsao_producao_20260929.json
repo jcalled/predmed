@@ -1,0 +1,5016 @@
+{
+ "previsao_id": "previsao-producao-v1-20260929",
+ "avaliacao_id": "previsao-demanda-v1-20260929",
+ "gerado_em": "2026-09-29T10:24:14",
+ "natureza": "estimado",
+ "alvo": "Produção cirúrgica mensal SUS no Ceará: nº de AIH principais (IDENT=1) pagas com procedimento realizado do grupo SIGTAP 04, por competência de processamento, por especialidade da fila. Não é a entrada na fila nem o estoque da fila.",
+ "ultima_competencia_observada": "2026-06",
+ "competencias_provisorias": [
+  "2026-05",
+  "2026-06"
+ ],
+ "serie_sha256": "237b7a2ccbf4d59408db5da7fd039ad862212583c9686df59bfd1ee1268553d2",
+ "mesma_serie_da_avaliacao": true,
+ "intervalo": "80% empírico: previsão × quantis 10% e 90% da razão real/previsto do mesmo modelo na janela de teste 2025-07..2026-06 (origem móvel, fora da amostra); limites nunca excluem a própria previsão",
+ "horizonte": "h1/h2/h3 = 1, 2 e 3 competências após a última observada (≈ 30, 60 e 90 dias); competência de processamento SIH, não data da cirurgia",
+ "series": [
+  {
+   "especialidade": "BUCO MAXILO-FACIAL",
+   "carater": "ELETIVO",
+   "modelo": "holt_winters_pos2022",
+   "modelo_descricao": "Holt-Winters (config. atual do PREDMED), treino a partir de 2022-01",
+   "baixo_volume": true,
+   "atinge_meta_15": {
+    "h1": false,
+    "h2": false,
+    "h3": false,
+    "trimestre": false
+   },
+   "mape_teste_trimestre_pct": 20.85,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 13,
+     "intervalo_80_inferior": 12,
+     "intervalo_80_superior": 25,
+     "mape_teste_pct": 27.39,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 27.39
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 16,
+     "intervalo_80_inferior": 16,
+     "intervalo_80_superior": 30,
+     "mape_teste_pct": 26.59,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 26.59
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 11,
+     "intervalo_80_inferior": 11,
+     "intervalo_80_superior": 23,
+     "mape_teste_pct": 27.91,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 27.91
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 11
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 14
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 9
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 8
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 10
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 9
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 10
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 5
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 10
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 10
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 10
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 9
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 17
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 13
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 14
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 7
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 13
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 13
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 13
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 9
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 16
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 13
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 14
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 15
+    }
+   ]
+  },
+  {
+   "especialidade": "CARDIOVASCULAR",
+   "carater": "ELETIVO",
+   "modelo": "holt_winters_imputada",
+   "modelo_descricao": "Holt-Winters, treino 2019+ com 2020-03..2021-12 imputados",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": false,
+    "h2": false,
+    "h3": false,
+    "trimestre": false
+   },
+   "mape_teste_trimestre_pct": 19.28,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 313,
+     "intervalo_80_inferior": 267,
+     "intervalo_80_superior": 420,
+     "mape_teste_pct": 16.94,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 16.94
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 379,
+     "intervalo_80_inferior": 313,
+     "intervalo_80_superior": 503,
+     "mape_teste_pct": 19.91,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 19.91
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 294,
+     "intervalo_80_inferior": 224,
+     "intervalo_80_superior": 419,
+     "mape_teste_pct": 24.99,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 24.99
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 202
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 181
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 176
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 183
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 162
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 154
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 156
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 183
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 155
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 218
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 166
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 184
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 187
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 276
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 263
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 218
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 253
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 201
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 155
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 185
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 207
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 239
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 309
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 314
+    }
+   ]
+  },
+  {
+   "especialidade": "CIR DIGESTIVA",
+   "carater": "ELETIVO",
+   "modelo": "holt_winters_imputada",
+   "modelo_descricao": "Holt-Winters, treino 2019+ com 2020-03..2021-12 imputados",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": true,
+    "h2": true,
+    "h3": true,
+    "trimestre": true
+   },
+   "mape_teste_trimestre_pct": 8.12,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 2743,
+     "intervalo_80_inferior": 2705,
+     "intervalo_80_superior": 3013,
+     "mape_teste_pct": 6.95,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 6.95
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 3011,
+     "intervalo_80_inferior": 2778,
+     "intervalo_80_superior": 3342,
+     "mape_teste_pct": 8.9,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 8.9
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 2977,
+     "intervalo_80_inferior": 2769,
+     "intervalo_80_superior": 3439,
+     "mape_teste_pct": 9.6,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 9.6
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 2557
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 2769
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 2730
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 2585
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 2565
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 1870
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 1711
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 1786
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 1952
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 2098
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 2235
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 2107
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 2376
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 2583
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 2706
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 2617
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 2751
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 2448
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 2381
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 2309
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 2679
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 2226
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 2571
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 2820
+    }
+   ]
+  },
+  {
+   "especialidade": "CIR PLASTICA REPARADORA",
+   "carater": "ELETIVO",
+   "modelo": "naive_ultimo",
+   "modelo_descricao": "Ingênuo: repete o último mês observado",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": false,
+    "h2": true,
+    "h3": true,
+    "trimestre": true
+   },
+   "mape_teste_trimestre_pct": 11.78,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 94,
+     "intervalo_80_inferior": 74,
+     "intervalo_80_superior": 122,
+     "mape_teste_pct": 19.77,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 19.77
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 94,
+     "intervalo_80_inferior": 80,
+     "intervalo_80_superior": 120,
+     "mape_teste_pct": 12.45,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 12.45
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 94,
+     "intervalo_80_inferior": 81,
+     "intervalo_80_superior": 123,
+     "mape_teste_pct": 14.34,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 14.34
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 73
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 72
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 74
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 96
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 84
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 57
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 54
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 52
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 50
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 58
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 68
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 68
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 62
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 68
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 80
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 52
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 89
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 69
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 75
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 82
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 74
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 84
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 72
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 94
+    }
+   ]
+  },
+  {
+   "especialidade": "ENDOCRINOLOGIA",
+   "carater": "ELETIVO",
+   "modelo": "sarima_imputada",
+   "modelo_descricao": "SARIMA(0,1,1)(0,1,1)12 em log, treino 2019+ com pandemia imputada",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": true,
+    "h2": true,
+    "h3": true,
+    "trimestre": true
+   },
+   "mape_teste_trimestre_pct": 11.05,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 84,
+     "intervalo_80_inferior": 75,
+     "intervalo_80_superior": 104,
+     "mape_teste_pct": 11.75,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 11.75
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 83,
+     "intervalo_80_inferior": 75,
+     "intervalo_80_superior": 105,
+     "mape_teste_pct": 12.87,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 12.87
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 80,
+     "intervalo_80_inferior": 72,
+     "intervalo_80_superior": 104,
+     "mape_teste_pct": 14.63,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 14.63
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 68
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 69
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 65
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 71
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 59
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 41
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 40
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 51
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 56
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 52
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 69
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 66
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 68
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 86
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 72
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 66
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 75
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 70
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 67
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 67
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 81
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 74
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 77
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 70
+    }
+   ]
+  },
+  {
+   "especialidade": "GINECOLOGIA",
+   "carater": "ELETIVO",
+   "modelo": "sarima_imputada",
+   "modelo_descricao": "SARIMA(0,1,1)(0,1,1)12 em log, treino 2019+ com pandemia imputada",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": true,
+    "h2": true,
+    "h3": true,
+    "trimestre": true
+   },
+   "mape_teste_trimestre_pct": 9.36,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 1306,
+     "intervalo_80_inferior": 1076,
+     "intervalo_80_superior": 1537,
+     "mape_teste_pct": 11.39,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 11.39
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 1446,
+     "intervalo_80_inferior": 1207,
+     "intervalo_80_superior": 1722,
+     "mape_teste_pct": 11.77,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 11.77
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 1402,
+     "intervalo_80_inferior": 1180,
+     "intervalo_80_superior": 1766,
+     "mape_teste_pct": 13.07,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 13.07
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 1431
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 1500
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 1425
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 1502
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 1527
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 1107
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 926
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 884
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 951
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 1022
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 1138
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 1106
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 1253
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 1435
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 1504
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 1385
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 1500
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 1080
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 1126
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 1072
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 1421
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 1130
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 1161
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 1201
+    }
+   ]
+  },
+  {
+   "especialidade": "NEUROLOGIA",
+   "carater": "ELETIVO",
+   "modelo": "naive_ultimo",
+   "modelo_descricao": "Ingênuo: repete o último mês observado",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": false,
+    "h2": false,
+    "h3": false,
+    "trimestre": false
+   },
+   "mape_teste_trimestre_pct": 23.68,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 202,
+     "intervalo_80_inferior": 166,
+     "intervalo_80_superior": 298,
+     "mape_teste_pct": 21.38,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 21.38
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 202,
+     "intervalo_80_inferior": 176,
+     "intervalo_80_superior": 374,
+     "mape_teste_pct": 26.84,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 26.84
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 202,
+     "intervalo_80_inferior": 182,
+     "intervalo_80_superior": 448,
+     "mape_teste_pct": 28.32,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 28.32
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 85
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 95
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 92
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 99
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 89
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 81
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 64
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 82
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 65
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 82
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 73
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 70
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 84
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 136
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 158
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 212
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 231
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 197
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 139
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 207
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 219
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 179
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 228
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 202
+    }
+   ]
+  },
+  {
+   "especialidade": "OBSTETRICIA",
+   "carater": "ELETIVO",
+   "modelo": "naive_sazonal",
+   "modelo_descricao": "Sazonal ingênuo: mesmo mês do ano anterior",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": true,
+    "h2": true,
+    "h3": true,
+    "trimestre": true
+   },
+   "mape_teste_trimestre_pct": 11.81,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 702,
+     "intervalo_80_inferior": 641,
+     "intervalo_80_superior": 926,
+     "mape_teste_pct": 14.2,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 14.2
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 667,
+     "intervalo_80_inferior": 609,
+     "intervalo_80_superior": 879,
+     "mape_teste_pct": 14.2,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 14.2
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 636,
+     "intervalo_80_inferior": 580,
+     "intervalo_80_superior": 839,
+     "mape_teste_pct": 14.2,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 14.2
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 646
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 614
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 706
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 696
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 606
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 473
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 649
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 635
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 708
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 795
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 819
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 621
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 702
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 667
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 636
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 633
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 653
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 786
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 859
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 729
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 881
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 810
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 771
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 790
+    }
+   ]
+  },
+  {
+   "especialidade": "OFTALMOLOGIA",
+   "carater": "ELETIVO",
+   "modelo": "prophet_imputada",
+   "modelo_descricao": "Prophet (sazonalidade anual multiplicativa), treino 2019+ com pandemia imputada",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": false,
+    "h2": false,
+    "h3": false,
+    "trimestre": false
+   },
+   "mape_teste_trimestre_pct": 15.1,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 98,
+     "intervalo_80_inferior": 65,
+     "intervalo_80_superior": 144,
+     "mape_teste_pct": 23.71,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 23.71
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 79,
+     "intervalo_80_inferior": 51,
+     "intervalo_80_superior": 115,
+     "mape_teste_pct": 23.95,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 23.95
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 81,
+     "intervalo_80_inferior": 53,
+     "intervalo_80_superior": 119,
+     "mape_teste_pct": 24.27,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 24.27
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 154
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 259
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 212
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 106
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 66
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 71
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 37
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 39
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 76
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 54
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 64
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 61
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 86
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 69
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 88
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 98
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 95
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 59
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 87
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 63
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 75
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 54
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 130
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 85
+    }
+   ]
+  },
+  {
+   "especialidade": "ONCOLOGIA",
+   "carater": "ELETIVO",
+   "modelo": "naive_ultimo",
+   "modelo_descricao": "Ingênuo: repete o último mês observado",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": true,
+    "h2": true,
+    "h3": false,
+    "trimestre": true
+   },
+   "mape_teste_trimestre_pct": 12.61,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 792,
+     "intervalo_80_inferior": 715,
+     "intervalo_80_superior": 990,
+     "mape_teste_pct": 12.27,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 12.27
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 792,
+     "intervalo_80_inferior": 792,
+     "intervalo_80_superior": 1054,
+     "mape_teste_pct": 14.49,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 14.49
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 792,
+     "intervalo_80_inferior": 765,
+     "intervalo_80_superior": 1065,
+     "mape_teste_pct": 17.49,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 17.49
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 316
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 352
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 328
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 389
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 360
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 363
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 384
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 405
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 357
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 327
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 346
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 353
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 409
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 409
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 474
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 550
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 504
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 454
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 572
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 480
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 608
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 656
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 684
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 792
+    }
+   ]
+  },
+  {
+   "especialidade": "ORTOPEDIA",
+   "carater": "ELETIVO",
+   "modelo": "naive_ultimo",
+   "modelo_descricao": "Ingênuo: repete o último mês observado",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": true,
+    "h2": true,
+    "h3": false,
+    "trimestre": true
+   },
+   "mape_teste_trimestre_pct": 10.7,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 1229,
+     "intervalo_80_inferior": 1049,
+     "intervalo_80_superior": 1529,
+     "mape_teste_pct": 11.1,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 11.1
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 1229,
+     "intervalo_80_inferior": 1127,
+     "intervalo_80_superior": 1590,
+     "mape_teste_pct": 12.67,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 12.67
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 1229,
+     "intervalo_80_inferior": 1133,
+     "intervalo_80_superior": 1745,
+     "mape_teste_pct": 15.55,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 15.55
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 704
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 682
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 722
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 710
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 693
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 659
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 725
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 667
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 685
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 760
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 815
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 905
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 782
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 860
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 1079
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 1113
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 1279
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 1208
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 1222
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 1042
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 1350
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 1346
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 1447
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 1229
+    }
+   ]
+  },
+  {
+   "especialidade": "OTORRINO",
+   "carater": "ELETIVO",
+   "modelo": "prophet_imputada",
+   "modelo_descricao": "Prophet (sazonalidade anual multiplicativa), treino 2019+ com pandemia imputada",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": true,
+    "h2": true,
+    "h3": true,
+    "trimestre": true
+   },
+   "mape_teste_trimestre_pct": 7.22,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 339,
+     "intervalo_80_inferior": 311,
+     "intervalo_80_superior": 437,
+     "mape_teste_pct": 11.9,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 11.9
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 376,
+     "intervalo_80_inferior": 345,
+     "intervalo_80_superior": 485,
+     "mape_teste_pct": 11.85,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 11.85
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 351,
+     "intervalo_80_inferior": 322,
+     "intervalo_80_superior": 453,
+     "mape_teste_pct": 11.83,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 11.83
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 269
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 319
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 275
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 335
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 284
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 275
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 217
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 333
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 300
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 235
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 249
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 298
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 355
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 389
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 308
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 311
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 333
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 275
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 337
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 309
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 394
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 299
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 413
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 445
+    }
+   ]
+  },
+  {
+   "especialidade": "OUTRAS",
+   "carater": "ELETIVO",
+   "modelo": "holt_winters_imputada",
+   "modelo_descricao": "Holt-Winters, treino 2019+ com 2020-03..2021-12 imputados",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": true,
+    "h2": true,
+    "h3": true,
+    "trimestre": true
+   },
+   "mape_teste_trimestre_pct": 11.11,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 2218,
+     "intervalo_80_inferior": 2095,
+     "intervalo_80_superior": 2688,
+     "mape_teste_pct": 9.11,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 9.11
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 2277,
+     "intervalo_80_inferior": 2172,
+     "intervalo_80_superior": 2828,
+     "mape_teste_pct": 10.55,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 10.55
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 2149,
+     "intervalo_80_inferior": 2051,
+     "intervalo_80_superior": 2952,
+     "mape_teste_pct": 12.58,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 12.58
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 1304
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 1320
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 1243
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 1326
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 1229
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 1065
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 1049
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 1146
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 1293
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 1193
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 1258
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 1391
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 1308
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 1366
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 1494
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 1547
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 1768
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 1646
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 1847
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 1543
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 1877
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 1856
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 2017
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 2300
+    }
+   ]
+  },
+  {
+   "especialidade": "PEQUENAS CIRURGIAS",
+   "carater": "ELETIVO",
+   "modelo": "holt_winters_imputada",
+   "modelo_descricao": "Holt-Winters, treino 2019+ com 2020-03..2021-12 imputados",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": false,
+    "h2": false,
+    "h3": false,
+    "trimestre": true
+   },
+   "mape_teste_trimestre_pct": 13.61,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 705,
+     "intervalo_80_inferior": 681,
+     "intervalo_80_superior": 920,
+     "mape_teste_pct": 15.54,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 15.54
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 702,
+     "intervalo_80_inferior": 656,
+     "intervalo_80_superior": 988,
+     "mape_teste_pct": 15.39,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 15.39
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 788,
+     "intervalo_80_inferior": 712,
+     "intervalo_80_superior": 1134,
+     "mape_teste_pct": 16.38,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 16.38
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 384
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 340
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 362
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 314
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 329
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 291
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 287
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 306
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 301
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 302
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 265
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 286
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 370
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 406
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 512
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 550
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 523
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 441
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 411
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 484
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 554
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 390
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 514
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 574
+    }
+   ]
+  },
+  {
+   "especialidade": "TOTAL",
+   "carater": "ELETIVO",
+   "modelo": "holt_winters_imputada",
+   "modelo_descricao": "Holt-Winters, treino 2019+ com 2020-03..2021-12 imputados",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": true,
+    "h2": true,
+    "h3": true,
+    "trimestre": true
+   },
+   "mape_teste_trimestre_pct": 8.23,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 11674,
+     "intervalo_80_inferior": 11149,
+     "intervalo_80_superior": 13338,
+     "mape_teste_pct": 7.6,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 7.6
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 12554,
+     "intervalo_80_inferior": 12304,
+     "intervalo_80_superior": 14483,
+     "mape_teste_pct": 7.76,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 7.76
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 12278,
+     "intervalo_80_inferior": 12278,
+     "intervalo_80_superior": 15073,
+     "mape_teste_pct": 9.64,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 9.64
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 8884
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 9292
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 9110
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 9091
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 8678
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 7032
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 6753
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 7020
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 7399
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 7628
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 8022
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 8059
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 8617
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 9425
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 10011
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 10022
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 10779
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 9575
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 9962
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 9132
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 11135
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 10031
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 11092
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 11601
+    }
+   ]
+  },
+  {
+   "especialidade": "TOTAL_SEM_OBSTETRICIA",
+   "carater": "ELETIVO",
+   "modelo": "holt_winters_imputada",
+   "modelo_descricao": "Holt-Winters, treino 2019+ com 2020-03..2021-12 imputados",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": true,
+    "h2": true,
+    "h3": true,
+    "trimestre": true
+   },
+   "mape_teste_trimestre_pct": 8.94,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 11024,
+     "intervalo_80_inferior": 10624,
+     "intervalo_80_superior": 12793,
+     "mape_teste_pct": 8.06,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 8.06
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 11810,
+     "intervalo_80_inferior": 11491,
+     "intervalo_80_superior": 13648,
+     "mape_teste_pct": 8.82,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 8.82
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 11587,
+     "intervalo_80_inferior": 11018,
+     "intervalo_80_superior": 14330,
+     "mape_teste_pct": 10.92,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 10.92
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 8238
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 8678
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 8404
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 8395
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 8072
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 6559
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 6104
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 6385
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 6691
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 6833
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 7203
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 7438
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 7915
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 8758
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 9375
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 9389
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 10126
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 8789
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 9103
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 8403
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 10254
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 9221
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 10321
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 10811
+    }
+   ]
+  },
+  {
+   "especialidade": "UROLOGIA",
+   "carater": "ELETIVO",
+   "modelo": "naive_ultimo",
+   "modelo_descricao": "Ingênuo: repete o último mês observado",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": true,
+    "h2": true,
+    "h3": true,
+    "trimestre": true
+   },
+   "mape_teste_trimestre_pct": 8.05,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 670,
+     "intervalo_80_inferior": 595,
+     "intervalo_80_superior": 787,
+     "mape_teste_pct": 9.07,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 9.07
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 670,
+     "intervalo_80_inferior": 632,
+     "intervalo_80_superior": 830,
+     "mape_teste_pct": 9.44,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 9.44
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 670,
+     "intervalo_80_inferior": 645,
+     "intervalo_80_superior": 881,
+     "mape_teste_pct": 13.31,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 13.31
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 680
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 706
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 691
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 671
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 615
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 516
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 444
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 446
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 440
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 422
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 447
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 534
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 558
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 662
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 623
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 663
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 712
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 628
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 671
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 551
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 699
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 675
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 684
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 670
+    }
+   ]
+  },
+  {
+   "especialidade": "BUCO MAXILO-FACIAL",
+   "carater": "TODOS",
+   "modelo": "holt_winters_imputada",
+   "modelo_descricao": "Holt-Winters, treino 2019+ com 2020-03..2021-12 imputados",
+   "baixo_volume": true,
+   "atinge_meta_15": {
+    "h1": false,
+    "h2": false,
+    "h3": false,
+    "trimestre": false
+   },
+   "mape_teste_trimestre_pct": 22.9,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 13,
+     "intervalo_80_inferior": 13,
+     "intervalo_80_superior": 24,
+     "mape_teste_pct": 23.16,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 23.16
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 17,
+     "intervalo_80_inferior": 17,
+     "intervalo_80_superior": 30,
+     "mape_teste_pct": 23.4,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 23.4
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 14,
+     "intervalo_80_inferior": 14,
+     "intervalo_80_superior": 25,
+     "mape_teste_pct": 23.29,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 23.29
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 15
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 18
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 12
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 8
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 12
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 10
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 13
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 5
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 10
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 13
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 10
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 9
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 18
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 16
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 19
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 13
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 13
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 13
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 15
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 11
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 18
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 13
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 16
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 18
+    }
+   ]
+  },
+  {
+   "especialidade": "CARDIOVASCULAR",
+   "carater": "TODOS",
+   "modelo": "naive_ultimo",
+   "modelo_descricao": "Ingênuo: repete o último mês observado",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": true,
+    "h2": true,
+    "h3": true,
+    "trimestre": true
+   },
+   "mape_teste_trimestre_pct": 5.99,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 1065,
+     "intervalo_80_inferior": 981,
+     "intervalo_80_superior": 1112,
+     "mape_teste_pct": 7.1,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 7.1
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 1065,
+     "intervalo_80_inferior": 948,
+     "intervalo_80_superior": 1308,
+     "mape_teste_pct": 8.56,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 8.56
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 1065,
+     "intervalo_80_inferior": 920,
+     "intervalo_80_superior": 1212,
+     "mape_teste_pct": 9.21,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 9.21
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 1020
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 981
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 892
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 816
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 705
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 999
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 895
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 1037
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 1071
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 1046
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 1062
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 1046
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 1015
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 1052
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 1096
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 1054
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 971
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 924
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 905
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 889
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 928
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 828
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 1155
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 1065
+    }
+   ]
+  },
+  {
+   "especialidade": "CIR DIGESTIVA",
+   "carater": "TODOS",
+   "modelo": "holt_winters_imputada",
+   "modelo_descricao": "Holt-Winters, treino 2019+ com 2020-03..2021-12 imputados",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": true,
+    "h2": true,
+    "h3": true,
+    "trimestre": true
+   },
+   "mape_teste_trimestre_pct": 5.7,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 3805,
+     "intervalo_80_inferior": 3724,
+     "intervalo_80_superior": 4113,
+     "mape_teste_pct": 5.79,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 5.79
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 4036,
+     "intervalo_80_inferior": 3711,
+     "intervalo_80_superior": 4483,
+     "mape_teste_pct": 7.29,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 7.29
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 4091,
+     "intervalo_80_inferior": 3830,
+     "intervalo_80_superior": 4489,
+     "mape_teste_pct": 7.55,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 7.55
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 3816
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 3997
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 3930
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 3652
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 3595
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 2889
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 2723
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 2739
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 2816
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 3070
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 3275
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 2999
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 3359
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 3693
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 3867
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 3787
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 3737
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 3423
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 3369
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 3272
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 3662
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 3195
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 3494
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 3915
+    }
+   ]
+  },
+  {
+   "especialidade": "CIR PLASTICA REPARADORA",
+   "carater": "TODOS",
+   "modelo": "naive_ultimo",
+   "modelo_descricao": "Ingênuo: repete o último mês observado",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": true,
+    "h2": true,
+    "h3": true,
+    "trimestre": true
+   },
+   "mape_teste_trimestre_pct": 6.02,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 234,
+     "intervalo_80_inferior": 213,
+     "intervalo_80_superior": 266,
+     "mape_teste_pct": 7.26,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 7.26
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 234,
+     "intervalo_80_inferior": 210,
+     "intervalo_80_superior": 252,
+     "mape_teste_pct": 5.1,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 5.1
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 234,
+     "intervalo_80_inferior": 212,
+     "intervalo_80_superior": 271,
+     "mape_teste_pct": 7.74,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 7.74
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 291
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 252
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 263
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 281
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 251
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 229
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 220
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 182
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 266
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 200
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 231
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 230
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 253
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 235
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 268
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 253
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 255
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 225
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 257
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 234
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 225
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 233
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 224
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 234
+    }
+   ]
+  },
+  {
+   "especialidade": "ENDOCRINOLOGIA",
+   "carater": "TODOS",
+   "modelo": "sarima_imputada",
+   "modelo_descricao": "SARIMA(0,1,1)(0,1,1)12 em log, treino 2019+ com pandemia imputada",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": true,
+    "h2": true,
+    "h3": false,
+    "trimestre": true
+   },
+   "mape_teste_trimestre_pct": 12.55,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 86,
+     "intervalo_80_inferior": 77,
+     "intervalo_80_superior": 103,
+     "mape_teste_pct": 12.05,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 12.05
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 84,
+     "intervalo_80_inferior": 75,
+     "intervalo_80_superior": 106,
+     "mape_teste_pct": 13.77,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 13.77
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 84,
+     "intervalo_80_inferior": 75,
+     "intervalo_80_superior": 110,
+     "mape_teste_pct": 16.08,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 16.08
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 73
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 74
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 67
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 74
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 61
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 41
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 41
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 55
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 57
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 56
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 71
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 67
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 72
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 88
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 79
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 74
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 79
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 72
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 71
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 70
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 82
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 74
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 81
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 74
+    }
+   ]
+  },
+  {
+   "especialidade": "GINECOLOGIA",
+   "carater": "TODOS",
+   "modelo": "sarima_imputada",
+   "modelo_descricao": "SARIMA(0,1,1)(0,1,1)12 em log, treino 2019+ com pandemia imputada",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": true,
+    "h2": true,
+    "h3": true,
+    "trimestre": true
+   },
+   "mape_teste_trimestre_pct": 6.83,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 1590,
+     "intervalo_80_inferior": 1379,
+     "intervalo_80_superior": 1774,
+     "mape_teste_pct": 8.87,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 8.87
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 1724,
+     "intervalo_80_inferior": 1535,
+     "intervalo_80_superior": 1942,
+     "mape_teste_pct": 8.66,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 8.66
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 1725,
+     "intervalo_80_inferior": 1503,
+     "intervalo_80_superior": 2027,
+     "mape_teste_pct": 9.73,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 9.73
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 1831
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 1874
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 1786
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 1841
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 1852
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 1341
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 1227
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 1181
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 1276
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 1301
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 1451
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 1346
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 1569
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 1744
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 1810
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 1691
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 1791
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 1354
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 1377
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 1318
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 1684
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 1422
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 1429
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 1460
+    }
+   ]
+  },
+  {
+   "especialidade": "NEUROLOGIA",
+   "carater": "TODOS",
+   "modelo": "holt_winters_imputada",
+   "modelo_descricao": "Holt-Winters, treino 2019+ com 2020-03..2021-12 imputados",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": true,
+    "h2": false,
+    "h3": false,
+    "trimestre": true
+   },
+   "mape_teste_trimestre_pct": 11.45,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 461,
+     "intervalo_80_inferior": 394,
+     "intervalo_80_superior": 627,
+     "mape_teste_pct": 13.91,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 13.91
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 493,
+     "intervalo_80_inferior": 423,
+     "intervalo_80_superior": 692,
+     "mape_teste_pct": 15.08,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 15.08
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 495,
+     "intervalo_80_inferior": 439,
+     "intervalo_80_superior": 700,
+     "mape_teste_pct": 15.23,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 15.23
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 327
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 353
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 422
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 335
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 298
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 310
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 337
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 358
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 314
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 289
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 323
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 298
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 372
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 430
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 486
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 528
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 480
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 450
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 400
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 444
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 446
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 346
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 435
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 446
+    }
+   ]
+  },
+  {
+   "especialidade": "OBSTETRICIA",
+   "carater": "TODOS",
+   "modelo": "prophet_imputada",
+   "modelo_descricao": "Prophet (sazonalidade anual multiplicativa), treino 2019+ com pandemia imputada",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": true,
+    "h2": true,
+    "h3": true,
+    "trimestre": true
+   },
+   "mape_teste_trimestre_pct": 2.24,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 5721,
+     "intervalo_80_inferior": 5528,
+     "intervalo_80_superior": 6095,
+     "mape_teste_pct": 3.46,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 3.46
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 5557,
+     "intervalo_80_inferior": 5366,
+     "intervalo_80_superior": 5916,
+     "mape_teste_pct": 3.49,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 3.49
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 5381,
+     "intervalo_80_inferior": 5224,
+     "intervalo_80_superior": 5732,
+     "mape_teste_pct": 3.31,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 3.31
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 5717
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 5352
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 5215
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 5259
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 5157
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 4839
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 5339
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 4966
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 5494
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 5451
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 5899
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 5485
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 5562
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 5389
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 5898
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 5439
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 5106
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 5497
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 5536
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 5141
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 5838
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 5420
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 5483
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 5517
+    }
+   ]
+  },
+  {
+   "especialidade": "OFTALMOLOGIA",
+   "carater": "TODOS",
+   "modelo": "prophet_imputada",
+   "modelo_descricao": "Prophet (sazonalidade anual multiplicativa), treino 2019+ com pandemia imputada",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": false,
+    "h2": false,
+    "h3": false,
+    "trimestre": false
+   },
+   "mape_teste_trimestre_pct": 15.7,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 104,
+     "intervalo_80_inferior": 76,
+     "intervalo_80_superior": 165,
+     "mape_teste_pct": 20.24,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 20.24
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 92,
+     "intervalo_80_inferior": 67,
+     "intervalo_80_superior": 146,
+     "mape_teste_pct": 20.5,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 20.5
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 98,
+     "intervalo_80_inferior": 72,
+     "intervalo_80_superior": 157,
+     "mape_teste_pct": 20.67,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 20.67
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 175
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 266
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 228
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 109
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 76
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 83
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 44
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 49
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 88
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 64
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 75
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 72
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 95
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 78
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 95
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 119
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 108
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 77
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 95
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 72
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 95
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 77
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 147
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 102
+    }
+   ]
+  },
+  {
+   "especialidade": "ONCOLOGIA",
+   "carater": "TODOS",
+   "modelo": "naive_ultimo",
+   "modelo_descricao": "Ingênuo: repete o último mês observado",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": true,
+    "h2": true,
+    "h3": false,
+    "trimestre": true
+   },
+   "mape_teste_trimestre_pct": 12.16,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 825,
+     "intervalo_80_inferior": 732,
+     "intervalo_80_superior": 1024,
+     "mape_teste_pct": 12.06,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 12.06
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 825,
+     "intervalo_80_inferior": 825,
+     "intervalo_80_superior": 1078,
+     "mape_teste_pct": 14.11,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 14.11
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 825,
+     "intervalo_80_inferior": 795,
+     "intervalo_80_superior": 1114,
+     "mape_teste_pct": 17.05,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 17.05
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 354
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 391
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 372
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 422
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 406
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 410
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 431
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 435
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 391
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 346
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 384
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 385
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 436
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 441
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 510
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 580
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 530
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 469
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 596
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 507
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 634
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 669
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 713
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 825
+    }
+   ]
+  },
+  {
+   "especialidade": "ORTOPEDIA",
+   "carater": "TODOS",
+   "modelo": "holt_winters_imputada",
+   "modelo_descricao": "Holt-Winters, treino 2019+ com 2020-03..2021-12 imputados",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": true,
+    "h2": true,
+    "h3": true,
+    "trimestre": true
+   },
+   "mape_teste_trimestre_pct": 5.7,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 3737,
+     "intervalo_80_inferior": 3501,
+     "intervalo_80_superior": 4207,
+     "mape_teste_pct": 5.73,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 5.73
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 3818,
+     "intervalo_80_inferior": 3656,
+     "intervalo_80_superior": 4385,
+     "mape_teste_pct": 6.57,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 6.57
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 3826,
+     "intervalo_80_inferior": 3639,
+     "intervalo_80_superior": 4394,
+     "mape_teste_pct": 7.14,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 7.14
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 3172
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 3386
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 3198
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 3219
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 3161
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 3013
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 2847
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 2951
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 3103
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 2870
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 3276
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 3271
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 3139
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 3003
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 3292
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 3253
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 3202
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 2996
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 3160
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 2880
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 3443
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 3436
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 3703
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 3647
+    }
+   ]
+  },
+  {
+   "especialidade": "OTORRINO",
+   "carater": "TODOS",
+   "modelo": "naive_ultimo",
+   "modelo_descricao": "Ingênuo: repete o último mês observado",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": true,
+    "h2": false,
+    "h3": false,
+    "trimestre": true
+   },
+   "mape_teste_trimestre_pct": 10.7,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 531,
+     "intervalo_80_inferior": 448,
+     "intervalo_80_superior": 662,
+     "mape_teste_pct": 13.09,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 13.09
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 531,
+     "intervalo_80_inferior": 450,
+     "intervalo_80_superior": 725,
+     "mape_teste_pct": 15.82,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 15.82
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 531,
+     "intervalo_80_inferior": 422,
+     "intervalo_80_superior": 761,
+     "mape_teste_pct": 19.49,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 19.49
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 383
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 463
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 408
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 466
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 378
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 385
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 311
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 428
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 409
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 308
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 367
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 427
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 523
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 528
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 461
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 417
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 419
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 352
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 440
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 424
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 490
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 385
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 504
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 531
+    }
+   ]
+  },
+  {
+   "especialidade": "OUTRAS",
+   "carater": "TODOS",
+   "modelo": "holt_winters_imputada",
+   "modelo_descricao": "Holt-Winters, treino 2019+ com 2020-03..2021-12 imputados",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": true,
+    "h2": true,
+    "h3": true,
+    "trimestre": true
+   },
+   "mape_teste_trimestre_pct": 7.69,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 5272,
+     "intervalo_80_inferior": 5141,
+     "intervalo_80_superior": 5989,
+     "mape_teste_pct": 6.67,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 6.67
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 5656,
+     "intervalo_80_inferior": 5656,
+     "intervalo_80_superior": 6485,
+     "mape_teste_pct": 7.11,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 7.11
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 5779,
+     "intervalo_80_inferior": 5779,
+     "intervalo_80_superior": 6699,
+     "mape_teste_pct": 9.5,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 9.5
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 3262
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 3279
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 3236
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 3249
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 3007
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 3035
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 3160
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 3084
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 3228
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 3094
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 3309
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 3300
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 3567
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 3605
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 4076
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 3962
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 3793
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 3707
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 4169
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 3702
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 4307
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 4183
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 4990
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 5222
+    }
+   ]
+  },
+  {
+   "especialidade": "PEQUENAS CIRURGIAS",
+   "carater": "TODOS",
+   "modelo": "naive_sazonal_nivel",
+   "modelo_descricao": "Sazonal ingênuo × razão de nível (últimos 3 meses / mesmos meses do ano anterior)",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": true,
+    "h2": true,
+    "h3": true,
+    "trimestre": true
+   },
+   "mape_teste_trimestre_pct": 9.65,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 646,
+     "intervalo_80_inferior": 549,
+     "intervalo_80_superior": 817,
+     "mape_teste_pct": 13.05,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 13.05
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 725,
+     "intervalo_80_inferior": 638,
+     "intervalo_80_superior": 921,
+     "mape_teste_pct": 13.66,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 13.66
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 882,
+     "intervalo_80_inferior": 772,
+     "intervalo_80_superior": 1176,
+     "mape_teste_pct": 14.29,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 14.29
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 556
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 543
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 560
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 498
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 478
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 417
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 446
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 458
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 431
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 453
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 426
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 443
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 496
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 556
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 677
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 702
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 634
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 518
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 501
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 577
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 660
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 485
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 577
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 661
+    }
+   ]
+  },
+  {
+   "especialidade": "TOTAL",
+   "carater": "TODOS",
+   "modelo": "sarima_imputada",
+   "modelo_descricao": "SARIMA(0,1,1)(0,1,1)12 em log, treino 2019+ com pandemia imputada",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": true,
+    "h2": true,
+    "h3": true,
+    "trimestre": true
+   },
+   "mape_teste_trimestre_pct": 3.3,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 24844,
+     "intervalo_80_inferior": 24350,
+     "intervalo_80_superior": 26807,
+     "mape_teste_pct": 3.79,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 3.79
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 25474,
+     "intervalo_80_inferior": 25201,
+     "intervalo_80_superior": 27683,
+     "mape_teste_pct": 3.76,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 3.76
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 25670,
+     "intervalo_80_inferior": 25478,
+     "intervalo_80_superior": 28199,
+     "mape_teste_pct": 4.63,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 4.63
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 21923
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 22216
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 21575
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 21124
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 20249
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 18712
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 18685
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 18567
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 19551
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 19140
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 20779
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 20047
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 21225
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 21668
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 23451
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 22747
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 22018
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 20873
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 21685
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 20252
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 23398
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 21610
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 23819
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 24553
+    }
+   ]
+  },
+  {
+   "especialidade": "TOTAL_SEM_OBSTETRICIA",
+   "carater": "TODOS",
+   "modelo": "holt_winters_imputada",
+   "modelo_descricao": "Holt-Winters, treino 2019+ com 2020-03..2021-12 imputados",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": true,
+    "h2": true,
+    "h3": true,
+    "trimestre": true
+   },
+   "mape_teste_trimestre_pct": 4.67,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 19261,
+     "intervalo_80_inferior": 18478,
+     "intervalo_80_superior": 21070,
+     "mape_teste_pct": 5.11,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 5.11
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 20321,
+     "intervalo_80_inferior": 20305,
+     "intervalo_80_superior": 22481,
+     "mape_teste_pct": 5.31,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 5.31
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 20347,
+     "intervalo_80_inferior": 20347,
+     "intervalo_80_superior": 22778,
+     "mape_teste_pct": 6.18,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 6.18
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 16206
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 16864
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 16360
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 15865
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 15092
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 13873
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 13346
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 13601
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 14057
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 13689
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 14880
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 14562
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 15663
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 16279
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 17553
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 17308
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 16912
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 15376
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 16149
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 15111
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 17560
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 16190
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 18336
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 19036
+    }
+   ]
+  },
+  {
+   "especialidade": "UROLOGIA",
+   "carater": "TODOS",
+   "modelo": "naive_ultimo",
+   "modelo_descricao": "Ingênuo: repete o último mês observado",
+   "baixo_volume": false,
+   "atinge_meta_15": {
+    "h1": true,
+    "h2": true,
+    "h3": true,
+    "trimestre": true
+   },
+   "mape_teste_trimestre_pct": 8.42,
+   "previsao": [
+    {
+     "horizonte": "h1",
+     "horizonte_dias": 30,
+     "competencia": "2026-07",
+     "previsto": 836,
+     "intervalo_80_inferior": 753,
+     "intervalo_80_superior": 933,
+     "mape_teste_pct": 7.07,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 7.07
+    },
+    {
+     "horizonte": "h2",
+     "horizonte_dias": 60,
+     "competencia": "2026-08",
+     "previsto": 836,
+     "intervalo_80_inferior": 748,
+     "intervalo_80_superior": 1008,
+     "mape_teste_pct": 10.33,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 10.33
+    },
+    {
+     "horizonte": "h3",
+     "horizonte_dias": 90,
+     "competencia": "2026-09",
+     "previsto": 836,
+     "intervalo_80_inferior": 762,
+     "intervalo_80_superior": 1075,
+     "mape_teste_pct": 14.02,
+     "n_erros_intervalo": 12,
+     "mape_recalculado_pct": 14.02
+    }
+   ],
+   "historico_24m": [
+    {
+     "competencia": "2024-07",
+     "aihs": 931
+    },
+    {
+     "competencia": "2024-08",
+     "aihs": 987
+    },
+    {
+     "competencia": "2024-09",
+     "aihs": 986
+    },
+    {
+     "competencia": "2024-10",
+     "aihs": 895
+    },
+    {
+     "competencia": "2024-11",
+     "aihs": 812
+    },
+    {
+     "competencia": "2024-12",
+     "aihs": 711
+    },
+    {
+     "competencia": "2025-01",
+     "aihs": 651
+    },
+    {
+     "competencia": "2025-02",
+     "aihs": 639
+    },
+    {
+     "competencia": "2025-03",
+     "aihs": 597
+    },
+    {
+     "competencia": "2025-04",
+     "aihs": 579
+    },
+    {
+     "competencia": "2025-05",
+     "aihs": 620
+    },
+    {
+     "competencia": "2025-06",
+     "aihs": 669
+    },
+    {
+     "competencia": "2025-07",
+     "aihs": 749
+    },
+    {
+     "competencia": "2025-08",
+     "aihs": 810
+    },
+    {
+     "competencia": "2025-09",
+     "aihs": 817
+    },
+    {
+     "competencia": "2025-10",
+     "aihs": 875
+    },
+    {
+     "competencia": "2025-11",
+     "aihs": 900
+    },
+    {
+     "competencia": "2025-12",
+     "aihs": 796
+    },
+    {
+     "competencia": "2026-01",
+     "aihs": 794
+    },
+    {
+     "competencia": "2026-02",
+     "aihs": 711
+    },
+    {
+     "competencia": "2026-03",
+     "aihs": 886
+    },
+    {
+     "competencia": "2026-04",
+     "aihs": 844
+    },
+    {
+     "competencia": "2026-05",
+     "aihs": 868
+    },
+    {
+     "competencia": "2026-06",
+     "aihs": 836
+    }
+   ]
+  }
+ ]
+}

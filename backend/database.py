@@ -427,6 +427,26 @@ class SerieProducaoCirurgica(Base):
     gerado_em     = Column(DateTime, default=datetime.utcnow)
 
 
+class ProducaoCirurgicaCnes(Base):
+    """Produção cirúrgica SIH-RD por estabelecimento (CNES) × competência × especialidade × caráter.
+    Só contagens agregadas (AIH principal, grupo SIGTAP 04); gerada por
+    _SCRIPTS/producao_cirurgica_cnes.py. Usada na redistribuição (docs/dados/redistribuicao-v1.md)."""
+    __tablename__ = "producao_cirurgica_cnes"
+    __table_args__ = (
+        UniqueConstraint("competencia", "cnes", "especialidade", "carater",
+                         name="uq_prod_cir_cnes"),
+    )
+
+    id            = Column(Integer, primary_key=True)
+    competencia   = Column(String(7), nullable=False, index=True)
+    cnes          = Column(String(10), nullable=False, index=True)
+    especialidade = Column(String(60), nullable=False)               # série SIH (mapa SIGTAP → fila)
+    carater       = Column(String(12), nullable=False)               # ELETIVO | URGENCIA
+    aihs          = Column(Integer, nullable=False, default=0)
+    provisoria    = Column(Boolean, default=False)
+    gerado_em     = Column(DateTime, default=datetime.utcnow)
+
+
 # ──────────────────────────────────────────────
 # HELPERS
 # ──────────────────────────────────────────────

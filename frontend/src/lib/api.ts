@@ -118,6 +118,14 @@ export const previsoesApi = {
   recalcular: () => api.post('/previsoes/recalcular').then(r => r.data),
 }
 
+// Previsão da PRODUÇÃO cirúrgica SIH (modelo validado fora da amostra; não é a fila)
+export const previsaoProducaoApi = {
+  get: (especialidade?: string, carater: 'TODOS' | 'ELETIVO' = 'TODOS') =>
+    api.get('/previsoes/producao', { params: { ...(especialidade && { especialidade }), carater } }).then(r => r.data),
+  resumo: (carater: 'TODOS' | 'ELETIVO' = 'TODOS') =>
+    api.get('/previsoes/producao/resumo', { params: { carater } }).then(r => r.data),
+}
+
 // ── Zerar Filas ──────────────────────────────────────────
 export const zerarFilasApi = {
   get: () => api.get('/zerarfilas').then(r => r.data),
@@ -152,6 +160,7 @@ export const analyticsApi = {
     api.post('/analytics/simulador-receita', vagas).then(r => r.data),
 
   // Previsão de demanda → aba Validação do modelo (MAPE, holdout SIH)
-  validacaoMape: (especialidade: string, meses: number) =>
-    api.get('/analytics/validacao-mape', { params: { especialidade, meses } }).then(r => r.data),
+  // (o parâmetro `meses` é ignorado pela API quando há avaliação versionada)
+  validacaoMape: (especialidade: string, meses: number = 6, carater: 'TODOS' | 'ELETIVO' = 'TODOS') =>
+    api.get('/analytics/validacao-mape', { params: { especialidade, meses, carater } }).then(r => r.data),
 }

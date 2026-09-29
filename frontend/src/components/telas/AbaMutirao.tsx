@@ -1,7 +1,7 @@
 'use client'
 import useSWR from 'swr'
 import Link from 'next/link'
-import { ArrowRight, TrendingUp, TrendingDown, Minus, FlaskConical } from 'lucide-react'
+import { ArrowRight, FlaskConical } from 'lucide-react'
 import { zerarFilasApi } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
 import KPICard from '@/components/ui/KPICard'
@@ -10,22 +10,21 @@ import SeloDado from '@/components/ui/SeloDado'
 import { Carregando, EstadoErro, EstadoVazio } from '@/components/ui/Estados'
 
 /*
- * Aba "Simulação de mutirão" da Redistribuição (ex-/dashboard/zerarfilas).
- * Só SESA/SMS veem a aba (como antes no menu). Tudo aqui é cenário simulado:
- * série histórica estimada, espera média e valor de AIH são parâmetros fixos.
+ * Aba "Simulação de mutirão" da Redistribuição (ex-/dashboard/zerarfilas). Só SESA/SMS.
+ * Cenário SIMULADO: repete por 3 meses as sugestões mensais da redistribuição v1 (mesma CIR,
+ * ociosidade estimada CNES + SIH), limitado ao excedente de cada origem. A fila sem ação é
+ * suposta estável (não há série de entradas). Garantias do backend: redistribuíveis ≤ fila,
+ * redução entre 0 e 100%.
  */
 
 interface PlanoEsp {
   especialidade: string
-  urgencia: string
-  tendencia: string
   fila_atual: number
-  fila_6m_sem_acao: number
-  fila_6m_com_redistrib: number
-  espera_media_meses: number
+  fila_sem_acao: number
+  fila_com_redistribuicao: number
   pacientes_redistribuiveis: number
+  reducao_pct: number
   aih_estimada_redistrib: number
-  meses_para_zeramento: number
 }
 
 interface SugestaoMutirao {
@@ -36,15 +35,12 @@ interface SugestaoMutirao {
   distancia_km: number | null
   qtd_sugerida: number
   aih_estimada: number
+  capacidade_natureza?: 'estimada' | 'declarada'
+  vinculo_provisorio?: boolean
 }
 
 const fmt = (n?: number | null) => (n == null ? '—' : n.toLocaleString('pt-BR'))
-
-function IconeTendencia({ t }: { t: string }) {
-  if (t === 'crescimento') return <><TrendingUp size={16} aria-hidden="true" /><span className="sr-only">tendência de crescimento</span></>
-  if (t === 'reducao') return <><TrendingDown size={16} aria-hidden="true" /><span className="sr-only">tendência de redução</span></>
-  return <><Minus size={16} aria-hidden="true" /><span className="sr-only">tendência estável</span></>
-}
+const pct = (n?: number | null) => (n == null ? '—' : `${n.toFixed(1).replace('.', ',')}%`)
 
 export default function AbaMutirao() {
   // Só texto de orientação; o botão aprovar (aba Sugestões) usa `pode_aprovar` da API.
@@ -53,6 +49,8 @@ export default function AbaMutirao() {
   const r = data?.resumo
   const plano: PlanoEsp[] = data?.plano_por_especialidade || []
   const sugestoes: SugestaoMutirao[] = data?.sugestoes_redistribuicao || []
+  const hipoteses: string[] = data?.hipoteses || []
+  const dias = r?.horizonte_dias ?? 90
 
   if (error && !data) return <EstadoErro erro={error} aoTentarNovamente={() => mutate()} />
 
@@ -65,28 +63,31 @@ export default function AbaMutirao() {
             <strong style={{ color: 'var(--yellow)' }}>Cenário simulado</strong>
             <SeloDado natureza="simulado" />
           </div>
-          Combina a projeção sobre série histórica estimada com as sugestões de redistribuição por CIR.
-          Espera média e valor de AIH (R$ 1.500) são parâmetros fixos, não medidos. Serve para planejar um mutirão, não é resultado.
+          Quanto da fila atual poderia ser operado em outro hospital da mesma CIR em {dias} dias, se as sugestões mensais de
+          redistribuição (capacidade ociosa <em>estimada</em> a partir do CNES e do SIH) se repetissem. Não é resultado medido nem vaga confirmada.
+          {hipoteses.length > 0 && (
+            <ul className="list-disc ml-4 mt-1 space-y-0.5">
+              {hipoteses.map(h => <li key={h}>{h}</li>)}
+            </ul>
+          )}
         </div>
       </div>
 
       {r && (
-        <section aria-label="Impacto projetado em 6 meses" className="mb-6 p-4 rounded-xl flex flex-wrap gap-6 items-center"
+        <section aria-label={`Impacto simulado em ${dias} dias`} className="mb-6 p-4 rounded-xl flex flex-wrap gap-6 items-center"
           style={{ background: 'rgba(0,194,255,0.05)', border: '1px solid rgba(0,194,255,0.2)' }}>
           <div>
-            <div className="text-xs mb-1" style={{ color: 'var(--text2)' }}>Fila projetada sem ação</div>
-            <div className="text-2xl font-bold font-mono" style={{ color: 'var(--red)' }}>{fmt(r.fila_total_6m_sem_acao)}</div>
+            <div className="text-xs mb-1" style={{ color: 'var(--text2)' }}>Fila hoje (sem ação, suposta estável)</div>
+            <div className="text-2xl font-bold font-mono" style={{ color: 'var(--red)' }}>{fmt(r.fila_total_sem_acao)}</div>
           </div>
           <ArrowRight size={20} aria-hidden="true" style={{ color: 'var(--text2)' }} />
           <div>
-            <div className="text-xs mb-1" style={{ color: 'var(--text2)' }}>Com redistribuição</div>
-            <div className="text-2xl font-bold font-mono" style={{ color: 'var(--accent2)' }}>{fmt(r.fila_total_6m_com_redistrib)}</div>
+            <div className="text-xs mb-1" style={{ color: 'var(--text2)' }}>Com redistribuição em {dias} dias</div>
+            <div className="text-2xl font-bold font-mono" style={{ color: 'var(--accent2)' }}>{fmt(r.fila_total_com_redistribuicao)}</div>
           </div>
           <div className="sm:ml-auto sm:text-right">
-            <div className="text-xs mb-1" style={{ color: 'var(--text2)' }}>Redução em 6 meses</div>
-            <div className="text-2xl font-bold font-mono" style={{ color: 'var(--accent2)' }}>
-              {r.reducao_total_pct != null ? `−${r.reducao_total_pct}%` : '—'}
-            </div>
+            <div className="text-xs mb-1" style={{ color: 'var(--text2)' }}>Parcela da fila redistribuída</div>
+            <div className="text-2xl font-bold font-mono" style={{ color: 'var(--accent2)' }}>{pct(r.reducao_total_pct)}</div>
           </div>
           <SeloDado natureza="simulado" />
         </section>
@@ -95,53 +96,50 @@ export default function AbaMutirao() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
         <KPICard label="Fila atual" value={fmt(r?.fila_total_atual)} detail="IntegraSUS" color="red" status="medido" carregando={isLoading}
           tooltip="Total de pacientes aguardando cirurgia eletiva no Ceará." />
-        <KPICard label="Redistribuíveis" value={fmt(r?.total_pacientes_redistribuiveis)} detail="Dentro da CIR" color="yellow" status="estimado" carregando={isLoading}
-          tooltip="Pacientes que poderiam ser realocados para hospitais com capacidade ociosa na mesma CIR." />
-        <KPICard label="AIH para receptores" value={r?.total_aih_estimada ? `R$ ${fmt(Math.round(r.total_aih_estimada / 1e6))} mi` : '—'} detail="R$ 1.500 por AIH" color="green" status="simulado" carregando={isLoading}
-          tooltip="Valor fixo por cirurgia multiplicado pelas redistribuições sugeridas; não é faturamento observado." />
-        <KPICard label="Redução projetada" value={r?.reducao_total_pct ? `−${r.reducao_total_pct}%` : '—'} detail="Em 6 meses" color="blue" status="simulado" carregando={isLoading}
-          tooltip="Cenário simulado sobre série histórica estimada; não é resultado medido." />
+        <KPICard label={`Redistribuíveis em ${dias} dias`} value={fmt(r?.total_pacientes_redistribuiveis)} detail={`${fmt(r?.redistribuiveis_por_mes)} por mês · mesma CIR`} color="yellow" status="simulado" carregando={isLoading}
+          tooltip="Soma das sugestões mensais repetidas no período, limitada ao excedente de cada hospital de origem. Nunca passa da fila." />
+        <KPICard label="Hospitais com ociosidade" value={fmt(r?.hospitais_com_ociosidade)} detail="Estimativa CNES + SIH" color="green" status="estimado" carregando={isLoading}
+          tooltip="Estabelecimentos com folga mensal estimada; precisa de confirmação do hospital." />
+        <KPICard label="AIH para receptores" value={r?.total_aih_estimada ? `R$ ${(r.total_aih_estimada / 1e6).toFixed(1).replace('.', ',')} mi` : '—'} detail="R$ 1.500 por AIH" color="blue" status="simulado" carregando={isLoading}
+          tooltip="Valor fixo por cirurgia multiplicado pelos redistribuíveis; não é faturamento observado." />
       </div>
 
       <section className="card" aria-labelledby="titulo-plano">
         <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
-          <h3 id="titulo-plano" className="text-base font-semibold">Plano por especialidade</h3>
-          {plano.length > 0 && <Badge tom="azul">{plano.length} especialidades</Badge>}
+          <h3 id="titulo-plano" className="text-base font-semibold">Cenário por especialidade ({dias} dias)</h3>
+          <div className="flex gap-2 items-center">
+            {plano.length > 0 && <Badge tom="azul">{plano.length} especialidades</Badge>}
+            <SeloDado natureza="simulado" />
+          </div>
         </div>
 
         {isLoading ? (
-          <Carregando mensagem="Montando o plano..." variante="linhas" />
+          <Carregando mensagem="Montando o cenário..." variante="linhas" />
         ) : plano.length === 0 ? (
-          <EstadoVazio titulo="Sem plano calculado" descricao="Verifique se a fila e as previsões foram carregadas." />
+          <EstadoVazio titulo="Sem cenário calculado" descricao="Verifique se a fila, o CNES e a produção SIH por estabelecimento foram carregados." />
         ) : (
           <ul className="space-y-3">
             {plano.map(p => {
-              const cor = p.urgencia === 'critica' ? 'var(--red)' : p.urgencia === 'alta' ? 'var(--yellow)' : 'var(--accent2)'
-              const pctBarra = Math.min((p.fila_atual / (r?.fila_total_atual || 1)) * 100, 100)
+              const pctBarra = Math.min(Math.max(p.reducao_pct, 0), 100)
               return (
                 <li key={p.especialidade} className="p-4 rounded-lg" style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }}>
                   <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-                    <div className="flex items-center gap-2">
-                      <span style={{ color: cor }} className="inline-flex"><IconeTendencia t={p.tendencia} /></span>
-                      <span className="font-semibold text-sm">{p.especialidade}</span>
-                      {p.urgencia === 'critica' && <Badge tom="vermelho">crítica</Badge>}
-                      {p.urgencia === 'alta' && <Badge tom="amarelo">alta</Badge>}
-                    </div>
+                    <span className="font-semibold text-sm">{p.especialidade}</span>
                     <div className="flex flex-wrap gap-3 text-xs font-mono" style={{ color: 'var(--text2)' }}>
-                      <span>Hoje <strong style={{ color: 'var(--text)' }}>{fmt(p.fila_atual)}</strong></span>
-                      <span>6 meses sem ação <strong style={{ color: 'var(--red)' }}>{fmt(p.fila_6m_sem_acao)}</strong></span>
-                      <span>6 meses com redistribuição <strong style={{ color: 'var(--accent2)' }}>{fmt(p.fila_6m_com_redistrib)}</strong></span>
+                      <span>Fila <strong style={{ color: 'var(--text)' }}>{fmt(p.fila_atual)}</strong></span>
+                      <span>Redistribuíveis <strong style={{ color: 'var(--accent2)' }}>{fmt(p.pacientes_redistribuiveis)}</strong></span>
+                      <span>Restante <strong style={{ color: 'var(--text)' }}>{fmt(p.fila_com_redistribuicao)}</strong></span>
+                      <span><strong style={{ color: 'var(--accent2)' }}>{pct(p.reducao_pct)}</strong> da fila</span>
                     </div>
                   </div>
-                  <div className="mb-2 h-1 rounded" style={{ background: 'rgba(255,255,255,0.05)' }} aria-hidden="true">
-                    <div className="h-1 rounded" style={{ width: `${pctBarra}%`, background: cor }} />
+                  <div className="h-1 rounded" style={{ background: 'rgba(255,255,255,0.05)' }} aria-hidden="true">
+                    <div className="h-1 rounded" style={{ width: `${pctBarra}%`, background: 'var(--accent2)' }} />
                   </div>
-                  <div className="flex flex-wrap gap-4 text-xs" style={{ color: 'var(--text2)' }}>
-                    <span>Espera média (parâmetro fixo): <strong style={{ color: 'var(--text)' }}>{p.espera_media_meses} meses</strong></span>
-                    {p.pacientes_redistribuiveis > 0 && <span>Redistribuíveis: <strong style={{ color: 'var(--accent2)' }}>{fmt(p.pacientes_redistribuiveis)}</strong></span>}
-                    {p.aih_estimada_redistrib > 0 && <span>AIH (simulado): <strong style={{ color: 'var(--accent2)' }}>R$ {fmt(p.aih_estimada_redistrib)}</strong></span>}
-                    {p.meses_para_zeramento > 0 && <span>Zeramento (simulado): <strong style={{ color: 'var(--text)' }}>{p.meses_para_zeramento} meses</strong></span>}
-                  </div>
+                  {p.pacientes_redistribuiveis === 0 && (
+                    <p className="text-xs mt-2" style={{ color: 'var(--text2)' }}>
+                      Sem destino compatível com ociosidade estimada na mesma CIR (produção na especialidade, habilitação ou capacidade).
+                    </p>
+                  )}
                 </li>
               )
             })}
@@ -151,7 +149,10 @@ export default function AbaMutirao() {
 
       {sugestoes.length > 0 && (
         <section className="card mt-5" aria-labelledby="titulo-sug-mutirao">
-          <h3 id="titulo-sug-mutirao" className="text-base font-semibold mb-4">Redistribuições consideradas no cenário</h3>
+          <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
+            <h3 id="titulo-sug-mutirao" className="text-base font-semibold">Redistribuições mensais consideradas no cenário</h3>
+            <SeloDado natureza="estimado" />
+          </div>
           <ul className="space-y-3">
             {sugestoes.map((s, i) => (
               <li key={i} className="flex items-center gap-3 p-3 rounded-lg flex-wrap text-sm" style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }}>
@@ -161,14 +162,15 @@ export default function AbaMutirao() {
                     <ArrowRight size={14} aria-label="para" style={{ color: 'var(--text2)' }} />
                     <span className="font-semibold">{s.destino.hospital_nome}</span>
                   </div>
-                  <div className="flex flex-wrap gap-x-3 text-xs" style={{ color: 'var(--text2)' }}>
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs items-center" style={{ color: 'var(--text2)' }}>
                     <span>{s.especialidade}</span>
                     <span>{s.cir}</span>
-                    <span>{s.distancia_km != null ? `~${s.distancia_km} km` : 'distância não calculada'}</span>
+                    <span>{s.capacidade_natureza === 'declarada' ? 'vagas declaradas pelo hospital' : 'capacidade estimada'}</span>
+                    {s.vinculo_provisorio && <Badge tom="amarelo">vínculo CNES provisório</Badge>}
                   </div>
                 </div>
                 <div className="text-right shrink-0">
-                  <div className="font-bold font-mono" style={{ color: 'var(--accent)' }}>{fmt(s.qtd_sugerida)} pacientes</div>
+                  <div className="font-bold font-mono" style={{ color: 'var(--accent)' }}>{fmt(s.qtd_sugerida)} pacientes/mês</div>
                   <div className="text-xs" style={{ color: 'var(--text2)' }}>AIH (simulado) R$ {fmt(s.aih_estimada)}</div>
                 </div>
               </li>

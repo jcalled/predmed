@@ -379,17 +379,39 @@ def _cir_do_tenant(db: Session, user: Usuario) -> Optional[str]:
 
 
 def _cir_do_hospital(db: Session, hospital_nome: str) -> Optional[str]:
+    """CIR do estabelecimento, na mesma ordem usada pelas sugestões (redistribuicao-v1):
+    1) CNES do vínculo da fila (hospital_alias) → município do CNES; 2) nome fantasia CNES;
+    3) tenant (vagas declaradas); 4) HospitalCirMap (residência dos pacientes, legado)."""
+    from database import HospitalAlias, CnesCapacidade
+    comp = db.query(func.max(CnesCapacidade.competencia)).scalar()
+    alias = db.query(HospitalAlias).filter(HospitalAlias.alias_nome == hospital_nome,
+                                           HospitalAlias.cnes.isnot(None)).first()
+    cap = None
+    if comp and alias:
+        cap = db.query(CnesCapacidade).filter(CnesCapacidade.competencia == comp,
+                                              CnesCapacidade.cnes == alias.cnes).first()
+    if comp and cap is None:
+        caps = db.query(CnesCapacidade).filter(CnesCapacidade.competencia == comp,
+                                               CnesCapacidade.nome_fantasia == hospital_nome).limit(2).all()
+        cap = caps[0] if len(caps) == 1 else None
+    if cap is not None and cap.cir_ads_predmed:
+        return cap.cir_ads_predmed
+    t = db.query(Tenant).filter(Tenant.nome == hospital_nome, Tenant.tipo == "hospital_particular").first()
+    if t and t.cir:
+        return t.cir
     m = db.query(HospitalCirMap).filter(HospitalCirMap.hospital_nome == hospital_nome).first()
     return m.cir if m else None
 
 
 @app.get("/redistribuicao")
 def redistribuicao(
+    cir: Optional[str] = None,
     user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # data = get_redistribuicao_sugestoes(db)
-    data = get_redistribuicao_sugestoes(db)  # ← MODIFICADO
+    # Redistribuição v1 (docs/dados/redistribuicao-v1.md): mesma CIR, capacidade ESTIMADA
+    # (CNES + produção SIH por CNES) ou declarada (vagas SUS do hospital particular).
+    data = get_redistribuicao_sugestoes(db, cir_filter=cir or None)
 
     # SESA aprova em todo o estado; SMS aprova transferências da própria CIR
     # (decisão de 29/09/2026). Hospitais só leem.
@@ -725,6 +747,31 @@ def previsoes(
     return get_previsoes(db, especialidade=especialidade, n_future=horizonte)
 
 
+@app.get("/previsoes/producao")
+def previsoes_producao(
+    especialidade: Optional[str] = None,
+    carater: str = "TODOS",
+    user: Usuario = Depends(get_current_user),
+):
+    """
+    Previsão ESTIMADA da produção cirúrgica SIH (não da fila) em 30/60/90 dias, com intervalo
+    empírico de 80% e o MAPE fora da amostra do modelo validado (avaliação versionada).
+    Fonte: backend/avaliacoes/previsao_demanda/previsao_producao_*.json. carater: TODOS | ELETIVO.
+    """
+    from services.previsao_producao import previsao_producao_para_api
+    return previsao_producao_para_api(especialidade, carater)
+
+
+@app.get("/previsoes/producao/resumo")
+def previsoes_producao_resumo(
+    carater: str = "TODOS",
+    user: Usuario = Depends(get_current_user),
+):
+    """Previsão 30/60/90 dias por especialidade (produção SIH), com o MAPE do teste."""
+    from services.previsao_producao import resumo_producao_para_api
+    return resumo_producao_para_api(carater)
+
+
 @app.get("/previsoes/todas")
 def previsoes_todas(
     user: Usuario = Depends(get_current_user),
@@ -795,72 +842,63 @@ def previsoes_ml_todas(
 # ─── ZERAR FILAS ──────────────────────────────────────────
 @app.get("/zerarfilas")
 def zerar_filas(
+    horizonte_meses: int = 3,
     user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
-    Módulo Programa Zerar Filas:
-    Combina previsões + redistribuição para calcular plano de eliminação da fila.
+    Simulação de mutirão (ex-Programa Zerar Filas) — cenário SIMULADO.
+    Repete por `horizonte_meses` (1–6, padrão 3 ≈ 90 dias) as sugestões mensais da
+    redistribuição v1 (mesma CIR, capacidade estimada CNES + SIH), limitado ao excedente de
+    cada origem. Hipótese explícita: sem série de entradas na fila, a fila sem ação é
+    considerada estável. Garantias: redistribuíveis ≤ fila e redução entre 0 e 100%.
     """
-    todas = get_previsoes_todas_especialidades(db)
+    from services.redistribuicao import plano_mutirao, especialidade_serie
+    horizonte_meses = min(max(horizonte_meses, 1), 6)
     redistrib = get_redistribuicao_sugestoes(db)
 
+    fila_esp: dict = {}
+    for esp, n in db.query(PacienteFila.especialidade, func.count(PacienteFila.id)) \
+            .group_by(PacienteFila.especialidade).all():
+        e = especialidade_serie(esp) if esp else "SEM ESPECIALIDADE"
+        fila_esp[e] = fila_esp.get(e, 0) + n
+
+    cen = plano_mutirao(fila_esp, redistrib["sugestoes"], horizonte_meses=horizonte_meses)
     plano = []
-    for esp in todas["por_especialidade"]:
-        nome = esp["especialidade"]
-        fila_atual = esp["fila_atual"]
-        fila_6m_sem = esp["fila_proj_6m"]
-        espera_meses = ESPERA_MEDIA_ESP.get(nome, 5.2)
-
-        # Pacientes redistribuíveis nesta especialidade
-        redistrib_esp = sum(
-            s["qtd_sugerida"] for s in redistrib["sugestoes"]
-            if s["especialidade"].upper() == nome
-        )
-
-        fila_6m_com = max(0, fila_6m_sem - redistrib_esp)
-        reducao_pct = round((fila_6m_sem - fila_6m_com) / max(fila_6m_sem, 1) * 100, 1)
-        meses_zeramento = round(fila_6m_com / max(fila_atual / espera_meses, 1)) if fila_atual > 0 else 0
-
+    for p in cen["plano"]:
         plano.append({
-            "especialidade": nome,
-            "fila_atual": fila_atual,
-            "fila_6m_sem_acao": fila_6m_sem,
-            "fila_6m_com_redistrib": fila_6m_com,
-            "pacientes_redistribuiveis": redistrib_esp,
-            "reducao_redistrib_pct": reducao_pct,
-            "espera_media_meses": espera_meses,
-            "meses_para_zeramento": meses_zeramento,
-            "aih_estimada_redistrib": redistrib_esp * VALOR_AIH_SIMULADO,
-            "espera_media_origem": ESPERA_MEDIA_ORIGEM,
-            "urgencia": esp["urgencia"],
-            "tendencia": esp["tendencia"],
+            **p,
+            "aih_estimada_redistrib": p["pacientes_redistribuiveis"] * VALOR_AIH_SIMULADO,
+            "aih_estimada_origem": "simulado",
         })
-
-    plano.sort(key=lambda x: x["fila_atual"], reverse=True)
-
-    total_redistribuiveis = sum(p["pacientes_redistribuiveis"] for p in plano)
-    total_aih = sum(p["aih_estimada_redistrib"] for p in plano)
-    fila_total_atual = todas["total"].get("fila_atual", 0)
-    fila_total_6m_sem = todas["total"].get("fila_proj_6m", 0)
-    fila_total_6m_com = max(0, fila_total_6m_sem - total_redistribuiveis)
 
     return {
         "resumo": {
-            "fila_total_atual": fila_total_atual,
-            "fila_total_6m_sem_acao": fila_total_6m_sem,
-            "fila_total_6m_com_redistrib": fila_total_6m_com,
-            "total_pacientes_redistribuiveis": total_redistribuiveis,
-            "total_aih_estimada": total_aih,
+            "horizonte_meses": horizonte_meses,
+            "horizonte_dias": horizonte_meses * 30,
+            "fila_total_atual": cen["fila_total_atual"],
+            "fila_total_sem_acao": cen["fila_total_atual"],
+            "fila_total_com_redistribuicao": cen["fila_total_com_redistribuicao"],
+            "total_pacientes_redistribuiveis": cen["total_pacientes_redistribuiveis"],
+            "redistribuiveis_por_mes": redistrib["total_redistribuiveis"],
+            "total_aih_estimada": cen["total_pacientes_redistribuiveis"] * VALOR_AIH_SIMULADO,
             "aih_estimada_origem": "simulado",
-            "reducao_total_pct": round(
-                (fila_total_6m_sem - fila_total_6m_com) / max(fila_total_6m_sem, 1) * 100, 1
-            ),
+            "reducao_total_pct": cen["reducao_total_pct"],
+            "hospitais_com_ociosidade": redistrib["hospitais_com_ociosidade"],
         },
         "plano_por_especialidade": plano,
         "sugestoes_redistribuicao": redistrib["sugestoes"],
         "origem": "simulado",
-        "aviso": "Plano simulado: série histórica estimada, espera média e valor de AIH são parâmetros fixos não validados.",
+        "natureza": "simulado",
+        "hipoteses": [
+            f"As sugestões mensais da redistribuição (capacidade estimada) se repetem por {horizonte_meses} meses.",
+            "Cada origem transfere no máximo o excedente acima de 1,5 mês da própria produção na especialidade.",
+            "Fila sem ação considerada estável (entradas = saídas): não há série observada de entradas na fila.",
+            "Valor por AIH fixo de R$ 1.500 (simulado, não é valor pago).",
+        ],
+        "metodologia": redistrib["metodologia"],
+        "aviso": ("Cenário simulado: usa ociosidade estimada (CNES + SIH), não vagas confirmadas; a fila "
+                  "sem ação é suposta estável e o valor de AIH é fixo. Não é resultado medido."),
         "gerado_em": datetime.now().isoformat(),
     }
 

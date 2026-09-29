@@ -28,8 +28,8 @@ export default function RedistribuicaoPage() {
       <div className="mb-4">
         <h1 className="text-xl sm:text-2xl font-bold">Redistribuição</h1>
         <p className="text-sm mt-1" style={{ color: 'var(--text2)' }}>
-          Hospitais com capacidade ociosa na mesma CIR para aliviar filas sob pressão.
-          Apoio à decisão: nenhuma transferência é executada pelo sistema.
+          Hospitais com capacidade ociosa estimada (CNES + produção SIH) na mesma CIR para aliviar filas sob pressão.
+          A capacidade precisa ser confirmada com o hospital. Apoio à decisão: nenhuma transferência é executada pelo sistema.
         </p>
       </div>
       <Abas abas={abas} rotulo="Seções da redistribuição" />

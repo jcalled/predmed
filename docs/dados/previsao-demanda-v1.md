@@ -202,3 +202,24 @@ Como a API e as telas usam a avaliação:
 - **Campos novos:** `avaliacao_id`, `modelo`, `mape_por_horizonte`, `baseline_sazonal_teste`, `atinge_meta_por_horizonte`, `serie_avaliada`, `baixo_volume`, `desenho_avaliacao` e `competencias_provisorias`.
 - **Especialidades:** `TOTAL` corresponde a `TOTAL_SEM_OBSTETRICIA`, e as duas especialidades de otorrino da fila correspondem a `OTORRINO`.
 - **Parâmetro `meses`:** é ignorado quando há avaliação versionada. Sem avaliação, a API volta ao cálculo antigo.
+
+## 9. Previsão operacional na tela (29/09/2026)
+
+**Script:** `backend/_SCRIPTS/prever_producao_cirurgica.py` gera `backend/avaliacoes/previsao_demanda/previsao_producao_AAAAMMDD.json` (`previsao_id = previsao-producao-v1-20260929`, com referência ao `avaliacao_id`).
+
+**Como a previsão é feita:**
+- **Série:** é a mesma da avaliação; o sha256 do CSV é conferido e, se divergir, o script aborta.
+- **Modelo:** em cada série (especialidade × caráter) é o `modelo_escolhido` na validação, treinado com todas as competências até 2026-06.
+- **Horizontes:** prevê 2026-07, 2026-08 e 2026-09 (h1–h3 ≈ 30/60/90 dias contados da última competência consolidada).
+- **Intervalo de 80%, empírico:**
+  - o modelo escolhido roda de novo com origem móvel, só sobre os alvos da janela de teste (n = 12 por horizonte);
+  - o intervalo é previsão × quantis 10% e 90% da razão real/previsto;
+  - os limites nunca excluem a própria previsão.
+- **Onde o limite inferior coincide com a previsão:** acontece em algumas séries (por exemplo, total sem obstetrícia em 60 e 90 dias). Nessas séries o modelo subestimou a produção em quase todo o teste, por causa do crescimento de 2026.
+- **Conferência de reprodutibilidade:** o MAPE recalculado nesse backtest é **igual** ao da avaliação versionada nas 34 séries.
+
+**API e tela:**
+- **Endpoints:** `GET /previsoes/producao?especialidade=&carater=TODOS|ELETIVO` e `GET /previsoes/producao/resumo`. Ambos devolvem `natureza = "estimado"`, o MAPE do teste por horizonte e o `avaliacao_id`.
+- **Aba "Previsão":** mostra a previsão com o selo "Estimado", o intervalo e o MAPE medido ao lado, com o aviso de que o alvo é a produção cirúrgica, e não a fila.
+- **Telas antigas:** as projeções sobre a série sintética da fila (regressão linear e Holt-Winters) saíram da tela. Os endpoints `/previsoes` e `/previsoes/ml` continuam, rotulados como simulados.
+- **Aba "Validação":** mostra os horizontes 30/60/90 dias (`mape_por_horizonte`), o caráter (todas ou só eletivas) e o `avaliacao_id`.
