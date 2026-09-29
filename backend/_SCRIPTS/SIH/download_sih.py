@@ -25,15 +25,11 @@ from sqlalchemy import Integer
 # ─────────────────────────────────────────────────────────────────
 # Logging
 # ─────────────────────────────────────────────────────────────────
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler("sih_import.log"),
-    ]
-)
+# A configuração do logging (inclui sih_import.log) fica no bloco __main__, para que
+# outros scripts (ex.: _SCRIPTS/coleta_datasus.py) possam importar este módulo sem efeitos colaterais.
 logger = logging.getLogger(__name__)
+
+URL_SIH_RD = "ftp://ftp.datasus.gov.br/dissemin/publicos/SIHSUS/200801_/Dados/{nome}"
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -116,7 +112,7 @@ def baixar_arquivo_sih(
         logger.info(f"   Já existe: {nome_arquivo} — pulando download")
         return caminho_local
 
-    url = f"ftp://ftp.datasus.gov.br/dissemin/publicos/SIHSUS/200801_/Dados/{nome_arquivo}"
+    url = URL_SIH_RD.format(nome=nome_arquivo)
     logger.info(f"📥 Baixando: {nome_arquivo}")
 
     try:
@@ -540,6 +536,14 @@ def recalcular_serie_historica_sih(db: Session):
 # ─────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        handlers=[
+            logging.StreamHandler(),
+            logging.FileHandler("sih_import.log"),
+        ]
+    )
     parser = argparse.ArgumentParser(description="Download e importação SIH/DATASUS")
     parser.add_argument("--uf", default="CE", help="UF (default: CE)")
     parser.add_argument("--anos", nargs="+", type=int,
