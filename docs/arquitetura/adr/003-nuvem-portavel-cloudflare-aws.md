@@ -1,6 +1,8 @@
 # ADR-003 — Nuvem portátil: Cloudflare preferencial, compatível com AWS
 
-- **Status:** Proposto. Requer decisão do responsável e, possivelmente, comunicação à FUNCAP.
+> **Atualização de 28/09/2026 — decisão tomada (D07 em `docs/gestao/decisoes.md`):** a nuvem principal é a **AWS, região São Paulo (sa-east-1)**, para API, PostgreSQL, arquivos e jobs de ETL/ML. Motivos: nota fiscal brasileira (prestação de contas), aderência ao texto aprovado (EC2/RDS/S3) e dados pessoais no Brasil. A **portabilidade** deste ADR continua valendo (Docker, PostgreSQL padrão, armazenamento compatível com S3, configuração por variáveis de ambiente). A preferência por Cloudflare e o arranjo híbrido foram descartados. O restante do documento fica como registro da análise.
+
+- **Status:** Substituído pela decisão D07 (AWS São Paulo, mantendo portabilidade).
 - **Data:** 28/09/2026
 - **Fontes consultadas:** documentação da Cloudflare em developers.cloudflare.com, lida em 28/09/2026: Python Workers e pacotes, Workers limits, Containers (visão geral, limits, pricing, architecture), Hyperdrive, Workflows limits, R2 data location, Data Localization Suite (visão geral e region support). Preços da AWS **não** foram consultados nesta rodada; os valores são estimativas a confirmar na AWS Pricing Calculator.
 
