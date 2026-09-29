@@ -125,7 +125,7 @@ Ou faça upload via interface web em **Configurações → Importação de Dados
 | Dashboard (geral) | ✅ Ceará todo | ✅ Ceará todo | ✅ Ceará todo | ✅ Ceará todo |
 | Fila Cirúrgica | ✅ tudo | ✅ tudo | ✅ só o seu hosp. | 📊 só agregados* |
 | Priorização | ✅ | ✅ | ✅ todas as instituições, iniciais de outros hosp. ocultas | 📊 só agregados* |
-| **Redistribuição** | ✅ + botão Aprovar | 👁️ leitura | 👁️ leitura | 👁️ leitura |
+| **Redistribuição** | ✅ + Aprovar (estado) | ✅ + Aprovar (só na sua CIR) | 👁️ leitura | 👁️ leitura |
 | Hospitais | ✅ todos | ✅ todos | ✅ sua CIR | ✅ públicos da CIR |
 | Judicializados | ✅ | ✅ | ✅ todas as instituições, iniciais de outros hosp. ocultas | 📊 só agregados* |
 | Prog. Zerar Filas | ✅ | ✅ | ✅ | ✅ |

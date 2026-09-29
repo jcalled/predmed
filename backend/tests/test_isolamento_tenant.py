@@ -131,12 +131,43 @@ def test_dashboard_agregado_igual_para_todos(client, cenario):
 
 
 # ── RBAC de escrita ──────────────────────────────────────────
-@pytest.mark.parametrize("email", ["alfa@t.local", "part@t.local", "sms@t.local"])
-def test_somente_sesa_aprova_redistribuicao(client, cenario, email):
+@pytest.mark.parametrize("email", ["alfa@t.local", "part@t.local"])
+def test_hospitais_nao_aprovam_redistribuicao(client, cenario, email):
     r = client.post("/redistribuicao/aprovar", headers=token(client, email), json={
         "hospital_origem": H_BETA, "hospital_destino": H_ALFA,
         "especialidade": "ORTOPEDIA", "qtd_pacientes": 1})
     assert r.status_code == 403
+
+
+def _mapear_cir(db):
+    from database import HospitalCirMap
+    for h, cir in [(H_ALFA, "CIR Fortaleza"), (H_BETA, "CIR Sobral"), ("HOSPITAL GAMA SOBRAL", "CIR Sobral")]:
+        db.add(HospitalCirMap(hospital_nome=h, municipio="X", cir=cir, confianca=1.0))
+    db.commit()
+
+
+def test_sms_aprova_dentro_da_propria_cir(client, cenario, db):
+    _mapear_cir(db)
+    r = client.post("/redistribuicao/aprovar", headers=token(client, "sms@t.local"), json={
+        "hospital_origem": H_BETA, "hospital_destino": "HOSPITAL GAMA SOBRAL",
+        "especialidade": "ORTOPEDIA", "qtd_pacientes": 1})
+    assert r.status_code == 200, r.text
+
+
+def test_sms_nao_aprova_fora_da_propria_cir(client, cenario, db):
+    _mapear_cir(db)
+    r = client.post("/redistribuicao/aprovar", headers=token(client, "sms@t.local"), json={
+        "hospital_origem": H_BETA, "hospital_destino": H_ALFA,
+        "especialidade": "ORTOPEDIA", "qtd_pacientes": 1})
+    assert r.status_code == 403
+
+
+def test_sesa_aprova_em_todo_o_estado(client, cenario, db):
+    _mapear_cir(db)
+    r = client.post("/redistribuicao/aprovar", headers=token(client, "sesa@t.local"), json={
+        "hospital_origem": H_BETA, "hospital_destino": H_ALFA,
+        "especialidade": "ORTOPEDIA", "qtd_pacientes": 1})
+    assert r.status_code == 200, r.text
 
 
 @pytest.mark.parametrize("email", ["alfa@t.local", "part@t.local", "sms@t.local"])

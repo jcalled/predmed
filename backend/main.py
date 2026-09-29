@@ -27,12 +27,12 @@ logger = logging.getLogger("main")
 from database import (
     get_db, init_db, SessionLocal,
     Usuario, Tenant, PacienteFila, CapacidadeHospital,
-    ConfigVagas, Transferencia
+    ConfigVagas, Transferencia, HospitalCirMap
 )
 from config import get_cors_origins
 from auth import (
     hash_password, verify_password, create_token,
-    get_current_user, require_sesa
+    get_current_user, require_sesa, require_gestor
 )
 from services.ia_engine import (
     get_dashboard_kpis, get_hospitais_pressao,
@@ -372,6 +372,16 @@ def hospitais(
 
 
 # ─── REDISTRIBUIÇÃO ───────────────────────────────────────
+def _cir_do_tenant(db: Session, user: Usuario) -> Optional[str]:
+    tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id).first() if user.tenant_id else None
+    return tenant.cir if tenant and tenant.cir else None
+
+
+def _cir_do_hospital(db: Session, hospital_nome: str) -> Optional[str]:
+    m = db.query(HospitalCirMap).filter(HospitalCirMap.hospital_nome == hospital_nome).first()
+    return m.cir if m else None
+
+
 @app.get("/redistribuicao")
 def redistribuicao(
     user: Usuario = Depends(get_current_user),
@@ -380,17 +390,27 @@ def redistribuicao(
     # data = get_redistribuicao_sugestoes(db)
     data = get_redistribuicao_sugestoes(db)  # ← MODIFICADO
 
-    # particular e hospital_publico veem, mas SÓ SESA pode aprovar
-    data["pode_aprovar"] = user.role == "sesa"
+    # SESA aprova em todo o estado; SMS aprova transferências da própria CIR
+    # (decisão de 29/09/2026). Hospitais só leem.
+    data["pode_aprovar"] = user.role in ("sesa", "sms")
+    data["escopo_aprovacao"] = "estado" if user.role == "sesa" else (
+        _cir_do_tenant(db, user) if user.role == "sms" else None)
     return data
 
 
 @app.post("/redistribuicao/aprovar")
 def aprovar_redistribuicao(
     data: AprovacaoInput,
-    user: Usuario = Depends(require_sesa),
+    user: Usuario = Depends(require_gestor),
     db: Session = Depends(get_db)
 ):
+    if user.role == "sms":
+        cir = _cir_do_tenant(db, user)
+        cir_origem = _cir_do_hospital(db, data.hospital_origem)
+        cir_destino = _cir_do_hospital(db, data.hospital_destino)
+        if not cir or cir_origem != cir or cir_destino != cir:
+            raise HTTPException(403, "A SMS aprova apenas transferências entre hospitais da própria CIR")
+
     # Verifica vagas se destino for particular
     if data.tenant_destino_id:
         vagas = get_vagas_status_tenant(db, data.tenant_destino_id)
